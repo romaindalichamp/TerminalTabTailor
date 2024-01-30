@@ -1,0 +1,27 @@
+<idea-plugin>
+  <id>com.terminaltabtailor.TerminalTabTailor</id>
+  <name>Terminal Tab Tailor</name>
+  <vendor email="romain.dalichamp@gmail.com" url="http://romain.dalichamp.fr">Terminal Tab Tailor</vendor>
+
+  <description><![CDATA[
+    Terminal Tab Tailor enhances the IntelliJ IDEA development experience by dynamically renaming terminal tabs based on the selection in your project tree. It streamlines workspace organization and improves navigation between multiple terminal sessions.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="com.terminaltabtailor.activities.StartupActivity"/>
+    <projectConfigurable parentId="tools"
+      instance="com.terminaltabtailor.settings.TerminalTabTailorConfigurable"
+      displayName="Terminal Tab Tailor"/>
+    <applicationService
+      serviceImplementation="com.terminaltabtailor.settings.TerminalTabTailorSettingsService"/>
+  </extensions>
+
+  <application-components>
+    <component>
+      <implementation-class>com.terminaltabtailor.activities.StartupActivity</implementation-class>
+    </component>
+  </application-components>
+
+</idea-plugin>

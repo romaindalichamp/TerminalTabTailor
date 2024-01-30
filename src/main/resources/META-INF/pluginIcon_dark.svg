@@ -1,0 +1,15 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main rectangle with white border -->
+  <rect x="5" y="10" width="30" height="20" rx="2" fill="url(#terminalGradient)" stroke="white" stroke-width="0.3"/>
+  <rect x="7" y="12" width="4" height="2" fill="white"/>
+  <rect x="13" y="12" width="4" height="2" fill="white"/>
+  <rect x="19" y="12" width="4" height="2" fill="#0B73B9"/>
+  <rect x="25" y="12" width="4" height="2" fill="white"/>
+  <!-- Tie shape -->
+  <text x="14" y="25" font-family="Arial" font-size="10" fill="white">>_</text>
+  <defs>
+    <linearGradient id="terminalGradient" x1="5" y1="10" x2="35" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#333333"/>
+    </linearGradient>
+  </defs>
+</svg>
