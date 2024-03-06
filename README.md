@@ -7,9 +7,10 @@ Simply select a file or folder within your project tree and initiate a terminal 
 ![img_3.png](img_3.png)
 
 Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
+* Maintain tabs in perpetual alphabetical order.
+* Maintain tabs sorted by descending date.
+* Configure the plugin to prompt the renaming dialogue each time a new terminal tab is opened.
 * Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).
-* Maintain tabs in perpetual alphabetical order or sorted by descending date for optimal organization.
-* Configure the plugin to prompt the renaming dialogue each time a new terminal tab is opened, ensuring consistent naming conventions.
 
 ![img.png](img.png)
 

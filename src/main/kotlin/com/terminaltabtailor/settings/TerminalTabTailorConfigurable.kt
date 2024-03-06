@@ -13,18 +13,18 @@ import javax.swing.*
 
 class TerminalTabTailorConfigurable : Configurable {
     private val settingsService = service<TerminalTabTailorSettingsService>()
-    private var useCurrentDate = JBCheckBox("Incorporate the current date into tab names")
-    private var ascSort = JBCheckBox("Maintain tabs in perpetual alphabetical order")
-    private var descDateSort = JBCheckBox("Maintain tabs sorted by descending date for optimal")
-    private var performManualRenaming = JBCheckBox("Configure the plugin to prompt the renaming dialogue each time a new terminal tab is opened")
+    private var useCurrentDate = JBCheckBox("Incorporate the current date into tab names.")
+    private var ascSort = JBCheckBox("Maintain tabs in perpetual alphabetical order.")
+    private var descDateSort = JBCheckBox("Maintain tabs sorted by descending date.")
+    private var performManualRenaming = JBCheckBox("Configure the plugin to prompt the renaming dialogue each time a new terminal tab is opened.")
     private var dateTemplate = JBTextField()
     private var dateTemplatePanel = JPanel(MigLayout())
 
     private val radioBtnGroup = ButtonGroup()
-    private var authoriseFilesName = JBRadioButton("Permit the use of file names directly")
+    private var authoriseFilesName = JBRadioButton("Permit the use of file names directly.")
     private var alwaysParentDirName = JBRadioButton("Default to directory names, utilizing the parent directory's name for files.")
     private var alwaysParentModuleName = JBRadioButton("Adopt the name of the parent module.")
-    private var alwaysParentModuleDirectoryName = JBRadioButton("Use the parent module's `directory` name for a more structured approach")
+    private var alwaysParentModuleDirectoryName = JBRadioButton("Use the parent module's `directory` name for a more structured approach.")
     private var alwaysProjectName = JBRadioButton("Consistently use the project's name for all terminal tabs.")
 
     private val settingsPanel = JPanel().apply {

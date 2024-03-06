@@ -4,7 +4,28 @@
   <vendor email="romain.dalichamp@gmail.com" url="http://romain.dalichamp.fr">Terminal Tab Tailor</vendor>
 
   <description><![CDATA[
-    Terminal Tab Tailor enhances the IntelliJ IDEA development experience by dynamically renaming terminal tabs based on the selection in your project tree. It streamlines workspace organization and improves navigation between multiple terminal sessions.
+    Terminal Tab Tailor significantly enhances the IntelliJ IDEA workflow by dynamically renaming terminal tabs to reflect the currently selected item in your project tree. This feature greatly aids in organizing your workspace and navigating effortlessly between numerous terminal sessions.
+    <br/><br/>
+    Simply select a file or folder within your project tree and initiate a terminal session from that context.
+    <br/><br/>
+    Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
+    <ul>
+      <li>Maintain tabs in perpetual alphabetical order.</li>
+      <li>Maintain tabs sorted by descending date.</li>
+      <li>Configure the plugin to prompt the renaming dialogue each time a new terminal tab is opened.</li>
+      <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
+    </ul>
+    <br/><br/>
+    Choose from a variety of naming conventions to suit your workflow:<br/>
+    <ul>
+      <li>Permit the use of file names directly.</li>
+      <li>Default to directory names, utilizing the parent directory's name for files.</li>
+      <li>Adopt the name of the parent module.</li>
+      <li>Use the parent module's directory name for a more structured approach.</li>
+      <li>Consistently use the project's name for all terminal tabs.</li>
+    </ul>
+    <br/><br/>
+    <b>Pro-tip</b>: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action, streamlining the process of opening terminals in your desired context.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
