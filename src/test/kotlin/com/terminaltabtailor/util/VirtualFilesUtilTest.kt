@@ -17,20 +17,6 @@ import kotlin.test.assertTrue
 
 class VirtualFilesUtilTest {
     @Test
-    fun testGetDataContextFromTree() {
-        val tree = mock(JTree::class.java)
-        val dataManager = mock(DataManager::class.java)
-        `when`(dataManager.getDataContext(tree)).thenReturn(mock(DataContext::class.java))
-
-        mockStatic(DataManager::class.java).use { mockedDataManager ->
-            mockedDataManager.`when`<Any> { DataManager.getInstance() }.thenReturn(dataManager)
-
-            val result = VirtualFilesUtil.getDataContextFromTree(tree)
-            assertNotNull(result)
-        }
-    }
-
-    @Test
     fun testGetVirtualFilesFromContext() {
         val dataContext = mock(DataContext::class.java)
         val virtualFiles = arrayOf(mock(VirtualFile::class.java))

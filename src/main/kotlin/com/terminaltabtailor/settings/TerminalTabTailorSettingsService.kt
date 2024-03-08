@@ -5,8 +5,8 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 
 @State(
-        name = "TerminalTabTailorSettings",
-        storages = [Storage("TerminalTabTailorSettings.xml")]
+    name = "TerminalTabTailorSettings",
+    storages = [Storage("TerminalTabTailorSettings.xml")]
 )
 class TerminalTabTailorSettingsService : PersistentStateComponent<TerminalTabTailorSettings> {
     private var settings = TerminalTabTailorSettings()
