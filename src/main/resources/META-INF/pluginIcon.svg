@@ -1,12 +1,11 @@
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Main rectangle with white border -->
-  <rect x="5" y="10" width="30" height="20" rx="2" fill="url(#terminalGradient)" stroke="white" stroke-width="0.3"/>
-  <rect x="7" y="12" width="4" height="2" fill="white"/>
-  <rect x="13" y="12" width="4" height="2" fill="white"/>
-  <rect x="19" y="12" width="4" height="2" fill="#0B73B9"/>
-  <rect x="25" y="12" width="4" height="2" fill="white"/>
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="15" width="80" height="50" rx="2" fill="url(#terminalGradient)" stroke="white" stroke-width="1"/>
+  <rect x="5" y="20" width="12" height="5" fill="white"/>
+  <rect x="20" y="20" width="12" height="5" fill="white"/>
+  <rect x="35" y="20" width="12" height="5" fill="#0B73B9"/>
+  <rect x="50" y="20" width="12" height="5" fill="white"/>
   <!-- Tie shape -->
-  <text x="14" y="25" font-family="Arial" font-size="10" fill="white">>_</text>
+  <text x="14" y="50" font-family="Arial" font-size="30" fill="white">>_</text>
   <defs>
     <linearGradient id="terminalGradient" x1="5" y1="10" x2="35" y2="30" gradientUnits="userSpaceOnUse">
       <stop stop-color="#333333"/>

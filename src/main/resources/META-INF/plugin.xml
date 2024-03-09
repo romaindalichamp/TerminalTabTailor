@@ -3,6 +3,20 @@
   <name>Terminal Tab Tailor</name>
   <vendor email="romain.dalichamp@gmail.com" url="http://romain.dalichamp.fr">Terminal Tab Tailor</vendor>
 
+  <change-notes><![CDATA[
+    <b>What's New in TerminalTabTailor 1.0.2</b>
+    <br/><br/>
+    <b>Improvements:</b>
+    <ul>
+      <li>Improvement: Sorting by date, is now also sorting by alphabetical order within the same date. Tabs with no dates are moved to the end.</li>
+    </ul>
+    <br/><br/>
+    <b>Bug Fixes:</b>
+    <ul>
+      <li>Fixed: Managing better slow operations on EDT. Removing error at first startup with LateInit</li>
+    </ul>
+  ]]></change-notes>
+
   <description><![CDATA[
     Terminal Tab Tailor significantly enhances the IntelliJ IDEA workflow by dynamically renaming terminal tabs to reflect the currently selected item in your project tree. This feature greatly aids in organizing your workspace and navigating effortlessly between numerous terminal sessions.
     <br/><br/>
@@ -12,7 +26,7 @@
     <ul>
       <li>Maintain tabs in perpetual alphabetical order.</li>
       <li>Maintain tabs sorted by descending date.</li>
-      <li>Configure the plugin to prompt the renaming dialogue each time a new terminal tab is opened.</li>
+      <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
       <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
     </ul>
     <br/><br/>

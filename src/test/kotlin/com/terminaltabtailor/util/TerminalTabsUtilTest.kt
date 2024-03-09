@@ -8,6 +8,8 @@ import com.intellij.ui.content.ContentManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.mockito.InOrder
+import org.mockito.Mockito
 import org.mockito.Mockito.*
 
 class TerminalTabsUtilTest {
@@ -97,10 +99,33 @@ class TerminalTabsUtilTest {
         inOrder.verify(contentManager).removeContent(eq(content1), eq(false)) // Zeta should come second
         inOrder.verify(contentManager).addContent(eq(content1))
     }
+    @Test
+    fun `test descDateSort sorts correctly with various date formats and cases`() {
+        val contentManager = mock(ContentManager::class.java)
+
+        val contents = arrayOf(
+            createMockContent("UPPERCASE <03-04-24>"),
+            createMockContent("nodate"),
+            createMockContent("WRONG_DATE <2222-55-888>"),
+            createMockContent("aaaa <02-04-24>")
+        )
+
+        `when`(contentManager.contents).thenReturn(contents)
+
+        val sortedContents = TerminalTabsUtil.descDateSort(contentManager,"dd-MM-yy")
+        println(sortedContents)
+
+        val inOrder: InOrder = inOrder(contentManager)
+        inOrder.verify(contentManager).addContent(contents[0])
+        inOrder.verify(contentManager).addContent(contents[3])
+        inOrder.verify(contentManager).addContent(contents[1])
+        inOrder.verify(contentManager).addContent(contents[2])
+    }
 
     private fun createMockContent(name: String): Content {
         val content = mock(Content::class.java)
         `when`(content.tabName).thenReturn(name)
+        `when`(content.displayName).thenReturn(name)
         return content
     }
 
