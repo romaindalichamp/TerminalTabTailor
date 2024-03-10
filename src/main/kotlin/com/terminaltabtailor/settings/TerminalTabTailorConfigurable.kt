@@ -2,26 +2,32 @@ package com.terminaltabtailor.settings
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.JBTextField
+import com.terminaltabtailor.enums.TabNameSort
 import com.terminaltabtailor.enums.TabNameType
+import com.terminaltabtailor.util.TerminalTabsUtil
 import net.miginfocom.swing.MigLayout
 import java.awt.Dimension
 import javax.swing.*
 
-class TerminalTabTailorConfigurable : Configurable {
+class TerminalTabTailorConfigurable(private val project: Project) : Configurable {
     private val settingsService = service<TerminalTabTailorSettingsService>()
     private var useCurrentDate = JBCheckBox("Incorporate the current date into tab names.")
-    private var ascSort = JBCheckBox("Maintain tabs in perpetual alphabetical order.")
-    private var descDateSort = JBCheckBox("Maintain tabs sorted by descending date.")
+
+    private val chooseKindOfSortGroup = ButtonGroup()
+    private var ascSort = JBRadioButton("Maintain tabs in perpetual alphabetical order.")
+    private var descDateSort = JBRadioButton("Maintain tabs sorted by descending date.")
+
+    private var dateTemplate = JBTextField()
     private var performManualRenaming =
         JBCheckBox("Prompt the renaming dialogue each time a new terminal tab is opened.")
-    private var dateTemplate = JBTextField()
     private var dateTemplatePanel = JPanel(MigLayout())
 
-    private val radioBtnGroup = ButtonGroup()
+    private val chooseKindOfNameGroup = ButtonGroup()
     private var authoriseFilesName = JBRadioButton("Permit the use of file names directly.")
     private var alwaysParentDirName =
         JBRadioButton("Default to directory names, utilizing the parent directory's name for files.")
@@ -36,18 +42,23 @@ class TerminalTabTailorConfigurable : Configurable {
         dateTemplatePanel.maximumSize =
             Dimension(Integer.MAX_VALUE, dateTemplate.getPreferredSize().height + 10)
 
-        radioBtnGroup.add(authoriseFilesName)
-        radioBtnGroup.add(alwaysParentDirName)
-        radioBtnGroup.add(alwaysParentModuleName)
-        radioBtnGroup.add(alwaysParentModuleDirectoryName)
-        radioBtnGroup.add(alwaysProjectName)
+        chooseKindOfNameGroup.add(authoriseFilesName)
+        chooseKindOfNameGroup.add(alwaysParentDirName)
+        chooseKindOfNameGroup.add(alwaysParentModuleName)
+        chooseKindOfNameGroup.add(alwaysParentModuleDirectoryName)
+        chooseKindOfNameGroup.add(alwaysProjectName)
+
+        chooseKindOfSortGroup.add(ascSort)
+        chooseKindOfSortGroup.add(descDateSort)
 
         add(JBLabel("Options"))
         add(Box.createVerticalStrut(15))
 
+        add(performManualRenaming)
+        add(Box.createVerticalStrut(15))
         add(ascSort)
         add(descDateSort)
-        add(performManualRenaming)
+        add(Box.createVerticalStrut(15))
         add(useCurrentDate)
         dateTemplatePanel.add(JBLabel("Choose a template to display the date in your tab's name: "))
         dateTemplatePanel.add(dateTemplate)
@@ -77,10 +88,13 @@ class TerminalTabTailorConfigurable : Configurable {
 
     override fun createComponent(): JComponent {
         useCurrentDate.isSelected = settingsService.state.useCurrentDate
-        ascSort.isSelected = settingsService.state.ascSort
-        descDateSort.isSelected = settingsService.state.descDateSort
         performManualRenaming.isSelected = settingsService.state.performManualRenaming
         dateTemplate.text = settingsService.state.dateTemplate
+
+        when (settingsService.state.selectedTabTypeSort) {
+            TabNameSort.ASC -> ascSort.isSelected = true
+            TabNameSort.DESC_DATE -> descDateSort.isSelected = true
+        }
 
         when (settingsService.state.selectedTabTypeName) {
             TabNameType.FILE_NAME -> authoriseFilesName.isSelected = true
@@ -94,6 +108,12 @@ class TerminalTabTailorConfigurable : Configurable {
     }
 
     override fun isModified(): Boolean {
+        val selectedTabNameSort = when {
+            ascSort.isSelected -> TabNameSort.ASC
+            descDateSort.isSelected -> TabNameSort.DESC_DATE
+            else -> TabNameSort.ASC
+        }
+
         val selectedTabTypeName = when {
             authoriseFilesName.isSelected -> TabNameType.FILE_NAME
             alwaysParentDirName.isSelected -> TabNameType.FIRST_DIR_NAME
@@ -104,19 +124,22 @@ class TerminalTabTailorConfigurable : Configurable {
         }
 
         return useCurrentDate.isSelected != settingsService.state.useCurrentDate
-                || ascSort.isSelected != settingsService.state.ascSort
-                || descDateSort.isSelected != settingsService.state.descDateSort
                 || performManualRenaming.isSelected != settingsService.state.performManualRenaming
                 || dateTemplate.text != settingsService.state.dateTemplate
+                || selectedTabNameSort != settingsService.state.selectedTabTypeSort
                 || selectedTabTypeName != settingsService.state.selectedTabTypeName
     }
 
     override fun apply() {
         settingsService.state.useCurrentDate = useCurrentDate.isSelected
-        settingsService.state.ascSort = ascSort.isSelected
-        settingsService.state.descDateSort = descDateSort.isSelected
         settingsService.state.performManualRenaming = performManualRenaming.isSelected
         settingsService.state.dateTemplate = dateTemplate.text
+
+        settingsService.state.selectedTabTypeSort = when {
+            ascSort.isSelected -> TabNameSort.ASC
+            descDateSort.isSelected -> TabNameSort.DESC_DATE
+            else -> TabNameSort.ASC
+        }
 
         settingsService.state.selectedTabTypeName = when {
             authoriseFilesName.isSelected -> TabNameType.FILE_NAME
@@ -126,5 +149,8 @@ class TerminalTabTailorConfigurable : Configurable {
             alwaysProjectName.isSelected -> TabNameType.PROJECT_NAME
             else -> TabNameType.MODULE_NAME
         }
+
+        TerminalTabsUtil.sortTabs(project, settingsService)
+        TerminalTabsUtil.activateTerminalWindow(project)
     }
 }

@@ -1,19 +1,24 @@
 <idea-plugin>
   <id>com.terminaltabtailor.TerminalTabTailor</id>
   <name>Terminal Tab Tailor</name>
-  <vendor email="romain.dalichamp@gmail.com" url="http://romain.dalichamp.fr">Terminal Tab Tailor</vendor>
+  <vendor email="romain.dalichamp@gmail.com" url="http://romain.dalichamp.fr">Terminal Tab Tailor
+  </vendor>
 
   <change-notes><![CDATA[
-    <b>What's New in TerminalTabTailor 1.0.2</b>
+    <b>What's New in TerminalTabTailor 1.1.0</b>
     <br/><br/>
     <b>Improvements:</b>
     <ul>
-      <li>Improvement: Sorting by date, is now also sorting by alphabetical order within the same date. Tabs with no dates are moved to the end.</li>
+      <li><b>Improved Sorting of Terminal Tabs:</b> Terminal tabs are now automatically sorted whenever settings are updated and the new configuration is applied.</li>
+      <li><b>Customizable Sorting Order:</b> Users can now choose between ascending and descending order for sorting by date, with ascending order set as the default.</li>
+      <li><b>Enhanced Date Sorting:</b> When sorting by date, tabs are now organized in ascending order for each specific date.</li>
+      <li><b>Handling Tabs Without Dates:</b> Tabs lacking a date or with dates that do not match the expected pattern are now moved to the end of the list and sorted in ascending order.</li>
     </ul>
     <br/><br/>
-    <b>Bug Fixes:</b>
+    <b>Refactor:</b>
     <ul>
-      <li>Fixed: Managing better slow operations on EDT. Removing error at first startup with LateInit</li>
+      <li><b>Optimization for Responsiveness:</b> Implemented read operations for executing slow tasks, enhancing performance and responsiveness by offloading heavy computations from the Event Dispatcher Thread.</li>
+      <li><b>Enhanced Tab Management:</b> Tabs are now automatically re-sorted following each rename operation, ensuring consistent order and organization.</li>
     </ul>
   ]]></change-notes>
 
@@ -24,9 +29,9 @@
     <br/><br/>
     Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
     <ul>
+      <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
       <li>Maintain tabs in perpetual alphabetical order.</li>
       <li>Maintain tabs sorted by descending date.</li>
-      <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
       <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
     </ul>
     <br/><br/>
@@ -43,6 +48,7 @@
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.plugins.terminal</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <postStartupActivity implementation="com.terminaltabtailor.activities.StartupActivity"/>
@@ -58,5 +64,4 @@
       <implementation-class>com.terminaltabtailor.activities.StartupActivity</implementation-class>
     </component>
   </application-components>
-
 </idea-plugin>
