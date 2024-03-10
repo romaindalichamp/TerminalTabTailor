@@ -5,20 +5,11 @@
   </vendor>
 
   <change-notes><![CDATA[
-    <b>What's New in TerminalTabTailor 1.1.0</b>
+    <b>What's New in TerminalTabTailor 1.1.1</b>
     <br/><br/>
-    <b>Improvements:</b>
+    <b>Fix:</b>
     <ul>
-      <li><b>Improved Sorting of Terminal Tabs:</b> Terminal tabs are now automatically sorted whenever settings are updated and the new configuration is applied.</li>
-      <li><b>Customizable Sorting Order:</b> Users can now choose between ascending and descending order for sorting by date, with ascending order set as the default.</li>
-      <li><b>Enhanced Date Sorting:</b> When sorting by date, tabs are now organized in ascending order for each specific date.</li>
-      <li><b>Handling Tabs Without Dates:</b> Tabs lacking a date or with dates that do not match the expected pattern are now moved to the end of the list and sorted in ascending order.</li>
-    </ul>
-    <br/><br/>
-    <b>Refactor:</b>
-    <ul>
-      <li><b>Optimization for Responsiveness:</b> Implemented read operations for executing slow tasks, enhancing performance and responsiveness by offloading heavy computations from the Event Dispatcher Thread.</li>
-      <li><b>Enhanced Tab Management:</b> Tabs are now automatically re-sorted following each rename operation, ensuring consistent order and organization.</li>
+      <li><b>Double Shift menu:</b> Handle the scenario where no files are selected upon initiating a terminal through the "Double Shift" menu action "Open in Terminal".</li>
     </ul>
   ]]></change-notes>
 
