@@ -44,24 +44,26 @@ class TerminalActionListener(
 
             ApplicationManager.getApplication().invokeLater {
                 GlobalScope.launch {
-                    val virtualSelection = VirtualFilesUtil.getVirtualSelection(project, event)
+                    val virtualSelection: VirtualSelection = VirtualFilesUtil.getVirtualSelection(project, event)
 
-                    terminalTab = virtualSelection.let {
-                        TerminalTabsUtil.renameTab(
-                            project,
-                            terminalTabNamesManager,
-                            it
-                        )
-                    }
+                    virtualSelection.lastSelectedVirtualFile?.let {
+                        terminalTab =
+                            TerminalTabsUtil.renameTab(
+                                project,
+                                terminalTabNamesManager,
+                                virtualSelection
+                            )
 
-                    terminalTab?.let {
-                        withContext(Dispatchers.EDT) {
-                            TerminalTabsUtil.sortTabs(project, settingsService)
-                            TerminalTabsUtil.selectNewTab(project, it.displayName)
-                            TerminalTabsUtil.activateTerminalWindow(project)
 
-                            if (settingsService.state.performManualRenaming) {
-                                TerminalTabsUtil.performManualRenamingAction(it)
+                        terminalTab?.let {
+                            withContext(Dispatchers.EDT) {
+                                TerminalTabsUtil.sortTabs(project, settingsService)
+                                TerminalTabsUtil.selectNewTab(project, it.displayName)
+                                TerminalTabsUtil.activateTerminalWindow(project)
+
+                                if (settingsService.state.performManualRenaming) {
+                                    TerminalTabsUtil.performManualRenamingAction(it)
+                                }
                             }
                         }
                     }

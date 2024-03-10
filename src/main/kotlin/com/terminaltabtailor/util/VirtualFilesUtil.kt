@@ -9,6 +9,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.terminaltabtailor.listeners.TerminalActionListener
 
@@ -36,7 +37,11 @@ class VirtualFilesUtil {
             var virtualFiles: Array<VirtualFile>? = null
 
             ApplicationManager.getApplication().runReadAction {
-                virtualFiles = event.getData(PlatformDataKeys.VIRTUAL_FILE_ARRAY)
+                runCatching {
+                    virtualFiles = event.getData(PlatformDataKeys.VIRTUAL_FILE_ARRAY)
+                }.getOrElse {
+                    virtualFiles = ProjectRootManager.getInstance(project).contentRoots
+                }
             }
 
             virtualFiles?.firstOrNull().let { virtualFile ->
