@@ -8,6 +8,7 @@ import com.intellij.openapi.vfs.isFile
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
+import com.terminaltabtailor.actions.ActionId
 import com.terminaltabtailor.enums.TabNameType
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
@@ -27,7 +28,7 @@ class TerminalTabNamesManager {
         val terminalContentManager =
             ToolWindowManager
                 .getInstance(project)
-                .getToolWindow("Terminal")
+                .getToolWindow(ActionId.TOOL_WINDOW_ID)
                 ?.contentManager
                 ?: return null
 
@@ -51,37 +52,31 @@ class TerminalTabNamesManager {
         lastSelectedVirtualFileParentModule: Module?,
         lastSelectedVirtualFileParentModuleDirName: String?,
     ): Content {
-//        TerminalTabsUtil.activateTerminalWindow(project)
-
-        // 1. Initialise the name with the selected VirtualFile name
         var name = lastSelectedVirtualFile.name
 
-        // 2. Change the name with another parent name depending on the option selected
         name = when {
-            TabNameType.FIRST_DIR_NAME == settingsService.state.selectedTabTypeName
+            settingsService.state.selectedTabTypeName == TabNameType.FIRST_DIR_NAME
                     && lastSelectedVirtualFile.isFile
             -> lastSelectedVirtualFileParent?.name ?: project.name
 
-            TabNameType.MODULE_NAME == settingsService.state.selectedTabTypeName
+            settingsService.state.selectedTabTypeName == TabNameType.MODULE_NAME
             -> lastSelectedVirtualFileParentModule?.name ?: project.name
 
-            TabNameType.MODULE_DIR_NAME == settingsService.state.selectedTabTypeName
+            settingsService.state.selectedTabTypeName == TabNameType.MODULE_DIR_NAME
             -> lastSelectedVirtualFileParentModuleDirName
                 ?: lastSelectedVirtualFileParentModule?.name
                 ?: project.name
 
-            TabNameType.PROJECT_NAME == settingsService.state.selectedTabTypeName
+            settingsService.state.selectedTabTypeName == TabNameType.PROJECT_NAME
             -> project.name
 
             else -> name
         }
 
-        // 3. Add the current date if selected
         if (settingsService.state.useCurrentDate) {
             name += " <${SimpleDateFormat(settingsService.state.dateTemplate).format(Date())}>"
         }
 
-        // 4. Add a number to the tab name to make it unique
         val (newDisplayName, newTabName) =
             TerminalTabsUtil.getNextAvailableTabName(terminals.contents.toList(), name);
 

@@ -5,18 +5,19 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Presentation
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
+import com.terminaltabtailor.actions.ActionId
+import com.terminaltabtailor.enums.TabNameSort
 import com.terminaltabtailor.listeners.TerminalActionListener
 import com.terminaltabtailor.managers.TerminalTabNamesManager
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
-import javax.swing.SwingUtilities
+
 
 class TerminalTabsUtil {
     companion object {
@@ -51,78 +52,74 @@ class TerminalTabsUtil {
         }
 
         fun ascSort(project: Project) {
-            val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("Terminal")
-            val contentManager = toolWindow?.contentManager
-
-            contentManager?.let { manager ->
-                manager
-                    .contents
-                    .sortedBy { it.displayName.lowercase(Locale.getDefault()) }
-                    .forEach { content ->
-                        manager.removeContent(content, false)
-                        manager.addContent(content)
-                    }
-            }
+            ToolWindowManager
+                .getInstance(project)
+                .getToolWindow(ActionId.TOOL_WINDOW_ID)
+                ?.contentManager
+                ?.let { manager ->
+                    manager
+                        .contents
+                        .sortedBy { it.displayName.lowercase(Locale.getDefault()) }
+                        .forEach { content ->
+                            manager.removeContent(content, false)
+                            manager.addContent(content)
+                        }
+                }
         }
 
         fun descDateSort(tabs: ContentManager?, dateFormatter: String) {
             tabs?.let {
-                val sortedContents = tabs.contents.sortedWith { c1, c2 ->
-                    val previousDisplayName = c1.displayName.lowercase(Locale.getDefault())
-                    val nextDisplayName = c2.displayName.lowercase(Locale.getDefault())
+                tabs.contents.sortedWith { previous, next ->
+                    val previousDisplayName = previous.displayName.lowercase(Locale.getDefault())
+                    val nextDisplayName = next.displayName.lowercase(Locale.getDefault())
 
-                    val date1 = extractDateUsingSubstring(previousDisplayName, dateFormatter)
-                    val date2 = extractDateUsingSubstring(nextDisplayName, dateFormatter)
+                    val previousDate = extractDateUsingSubstring(previousDisplayName, dateFormatter)
+                    val nextDate = extractDateUsingSubstring(nextDisplayName, dateFormatter)
 
                     when {
-                        date1 != null && date2 != null -> {
-                            val dateComparison = date2.compareTo(date1)
+                        previousDate != null && nextDate != null -> {
+                            val dateComparison = nextDate.compareTo(previousDate)
                             if (dateComparison != 0) dateComparison else previousDisplayName.compareTo(
                                 nextDisplayName
                             )
                         }
-
-                        date1 != null && date2 == null -> -1
-                        date1 == null && date2 != null -> 1
+                        previousDate != null && nextDate == null -> -1
+                        previousDate == null && nextDate != null -> 1
                         else -> previousDisplayName.compareTo(nextDisplayName)
                     }
+                }.forEach { content ->
+                    tabs.removeContent(content, false)
+                    tabs.addContent(content)
                 }
-
-                tabs.removeAllContents(false)
-                sortedContents.forEach { tabs.addContent(it) }
             }
         }
 
         fun performManualRenamingAction(terminalContent: Content) {
-            SwingUtilities.invokeLater {
-                terminalContent.let {
-                    val renameAction =
-                        ActionManager
-                            .getInstance()
-                            .getAction("Terminal.RenameSession")
+            terminalContent.let {
+                val renameAction =
+                    ActionManager
+                        .getInstance()
+                        .getAction(ActionId.TERMINAL_RENAME_SESSION_ID)
 
-                    val actionEvent =
-                        AnActionEvent
-                            .createFromDataContext(
-                                ActionPlaces.UNKNOWN,
-                                Presentation(),
-                                DataManager.getInstance().getDataContext(it.component)
-                            )
+                val actionEvent =
+                    AnActionEvent
+                        .createFromDataContext(
+                            ActionPlaces.UNKNOWN,
+                            Presentation(),
+                            DataManager.getInstance().getDataContext(it.component)
+                        )
 
-                    if (renameAction != null && renameAction.templatePresentation.isEnabledAndVisible) {
-                        renameAction.actionPerformed(actionEvent)
-                    }
+                if (renameAction != null && renameAction.templatePresentation.isEnabledAndVisible) {
+                    renameAction.actionPerformed(actionEvent)
                 }
             }
         }
 
         fun activateTerminalWindow(project: Project) {
-            ApplicationManager.getApplication().invokeLater {
-                ToolWindowManager
-                    .getInstance(project)
-                    .getToolWindow("Terminal")
-                    ?.activate(null)
-            }
+            ToolWindowManager
+                .getInstance(project)
+                .getToolWindow(ActionId.TOOL_WINDOW_ID)
+                ?.activate(null)
         }
 
         private fun extractDateUsingSubstring(input: String, pattern: String): LocalDate? {
@@ -158,11 +155,11 @@ class TerminalTabsUtil {
                 )
         }
 
-        fun forceSelectNewTab(project: Project, newDisplayName: String) {
+        fun selectNewTab(project: Project, newDisplayName: String) {
             val contentManager: ContentManager? =
                 ToolWindowManager
                     .getInstance(project)
-                    .getToolWindow("Terminal")
+                    .getToolWindow(ActionId.TOOL_WINDOW_ID)
                     ?.contentManager
 
             contentManager?.contents?.forEach { content ->
@@ -172,16 +169,14 @@ class TerminalTabsUtil {
             }
         }
 
-        fun sortTabs(project: Project, settingsService: TerminalTabTailorSettingsService) {
-            if (settingsService.state.ascSort) {
-                ascSort(project)
-            }
 
-            if (settingsService.state.descDateSort) {
-                descDateSort(
+        fun sortTabs(project: Project, settingsService: TerminalTabTailorSettingsService) {
+            when (settingsService.state.selectedTabTypeSort) {
+                TabNameSort.ASC -> ascSort(project)
+                TabNameSort.DESC_DATE -> descDateSort(
                     ToolWindowManager
                         .getInstance(project)
-                        .getToolWindow("Terminal")
+                        .getToolWindow(ActionId.TOOL_WINDOW_ID)
                         ?.contentManager,
                     settingsService.state.dateTemplate
                 )

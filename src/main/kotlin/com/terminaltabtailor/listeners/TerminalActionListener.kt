@@ -5,19 +5,19 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.AnActionResult
 import com.intellij.openapi.actionSystem.ex.AnActionListener
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.content.Content
+import com.terminaltabtailor.actions.ActionId
 import com.terminaltabtailor.managers.TerminalTabNamesManager
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
 import com.terminaltabtailor.util.VirtualFilesUtil
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class TerminalActionListener(
     private val project: Project,
@@ -39,24 +39,35 @@ class TerminalActionListener(
         result: AnActionResult
     ) {
         super.afterActionPerformed(action, event, result)
+        var terminalTab: Content?
+        if (ActionManager.getInstance().getId(action) == ActionId.OPEN_IN_TERMINAL_ID) {
 
-        if (ActionManager.getInstance().getId(action) == "Terminal.OpenInTerminal") {
+            ApplicationManager.getApplication().invokeLater {
+                GlobalScope.launch {
+                    val virtualSelection = VirtualFilesUtil.getVirtualSelection(project, event)
 
-            GlobalScope.launch(Dispatchers.EDT) {
-                val virtualSelection = VirtualFilesUtil.getVirtualSelection(project, event)
+                    terminalTab = virtualSelection.let {
+                        TerminalTabsUtil.renameTab(
+                            project,
+                            terminalTabNamesManager,
+                            it
+                        )
+                    }
 
-                val terminalTab = TerminalTabsUtil.renameTab(
-                    project,
-                    terminalTabNamesManager,
-                    virtualSelection
-                )
+                    terminalTab?.let {
+                        withContext(Dispatchers.EDT) {
+                            TerminalTabsUtil.sortTabs(project, settingsService)
+                            TerminalTabsUtil.selectNewTab(project, it.displayName)
+                            TerminalTabsUtil.activateTerminalWindow(project)
 
-                terminalTab?.let {
-                    if (settingsService.state.performManualRenaming) {
-                        TerminalTabsUtil.performManualRenamingAction(terminalTab)
+                            if (settingsService.state.performManualRenaming) {
+                                TerminalTabsUtil.performManualRenamingAction(it)
+                            }
+                        }
                     }
                 }
             }
+
         }
     }
 }

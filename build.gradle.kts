@@ -4,8 +4,8 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.22"
 }
 
-group = "com.terminaltabtailor"
-version = "1.0.2"
+group = "com.romaindalichamp"
+version = "1.1.0"
 
 repositories {
     mavenCentral()
@@ -14,6 +14,7 @@ repositories {
 intellij {
     version.set("2023.3.4")
     type.set("IC")
+    plugins.set(listOf("org.jetbrains.plugins.terminal"))
 }
 
 tasks {
