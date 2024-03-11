@@ -1,15 +1,18 @@
 package com.terminaltabtailor.util
 
+import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
+import com.terminaltabtailor.enums.TabNameSort
+import com.terminaltabtailor.settings.TerminalTabTailorSettings
+import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.InOrder
-import org.mockito.Mockito
 import org.mockito.Mockito.*
 
 class TerminalTabsUtilTest {
@@ -42,12 +45,12 @@ class TerminalTabsUtilTest {
     fun `getNextAvailableTabName returns prefix with next available number`() {
         val prefix = "Tab"
         val existingTabs = listOf(
-                createMockContent("Tab (1)"),
-                createMockContent("Tab (2)"),
-                createMockContent("Tab (3)")
+            createMockContent("Tab (1)"),
+            createMockContent("Tab (2)"),
+            createMockContent("Tab (3)")
         )
 
-        val result = TerminalTabsUtil.getNextAvailableTabName(existingTabs, prefix)
+        val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
 
         assertEquals(Pair("Tab (4)", "Tab (4)"), result)
     }
@@ -57,7 +60,7 @@ class TerminalTabsUtilTest {
         val prefix = "Tab"
         val existingTabs = listOf<Content>()
 
-        val result = TerminalTabsUtil.getNextAvailableTabName(existingTabs, prefix)
+        val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
 
         assertEquals(Pair("Tab", "Tab (1)"), result)
     }
@@ -66,14 +69,15 @@ class TerminalTabsUtilTest {
     fun `getNextAvailableTabName skips missing numbers`() {
         val prefix = "Tab"
         val existingTabs = listOf(
-                createMockContent("Tab (1)"),
-                createMockContent("Tab (3)")
+            createMockContent("Tab (1)"),
+            createMockContent("Tab (3)")
         )
 
-        val result = TerminalTabsUtil.getNextAvailableTabName(existingTabs, prefix)
+        val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
 
         assertEquals(Pair("Tab (2)", "Tab (2)"), result)
     }
+
 
     @Test
     fun `ascSort should order contents alphabetically`() {
@@ -83,6 +87,8 @@ class TerminalTabsUtilTest {
         val contentManager = mock(ContentManager::class.java)
         val content1 = mock(Content::class.java)
         val content2 = mock(Content::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
 
         `when`(project.getService(ToolWindowManager::class.java)).thenReturn(toolWindowManager)
         `when`(toolWindowManager.getToolWindow("Terminal")).thenReturn(toolWindow)
@@ -90,18 +96,28 @@ class TerminalTabsUtilTest {
         `when`(content1.displayName).thenReturn("Zeta")
         `when`(content2.displayName).thenReturn("Alpha")
         `when`(contentManager.contents).thenReturn(arrayOf(content1, content2))
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.ASC)
 
-        TerminalTabsUtil.ascSort(project)
+        TerminalTabsUtil.sortTabs(project, settingsService)
 
         val inOrder = inOrder(contentManager)
-        inOrder.verify(contentManager).removeContent(eq(content2), eq(false)) // Alpha should come first
+        inOrder.verify(contentManager)
+            .removeContent(eq(content2), eq(false)) // Alpha should come first
         inOrder.verify(contentManager).addContent(eq(content2))
-        inOrder.verify(contentManager).removeContent(eq(content1), eq(false)) // Zeta should come second
+        inOrder.verify(contentManager)
+            .removeContent(eq(content1), eq(false)) // Zeta should come second
         inOrder.verify(contentManager).addContent(eq(content1))
     }
+
     @Test
     fun `test descDateSort sorts correctly with various date formats and cases`() {
+        val project = mock(Project::class.java)
+        val toolWindowManager = mock(ToolWindowManager::class.java)
+        val toolWindow = mock(ToolWindow::class.java)
         val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
 
         val contents = arrayOf(
             createMockContent("UPPERCASE <03-04-24>"),
@@ -110,10 +126,15 @@ class TerminalTabsUtilTest {
             createMockContent("aaaa <02-04-24>")
         )
 
+        `when`(project.getService(ToolWindowManager::class.java)).thenReturn(toolWindowManager)
+        `when`(toolWindowManager.getToolWindow("Terminal")).thenReturn(toolWindow)
+        `when`(toolWindow.contentManager).thenReturn(contentManager)
         `when`(contentManager.contents).thenReturn(contents)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.DESC_DATE)
+        `when`(settingsState.dateTemplate).thenReturn("dd-MM-yy")
 
-        val sortedContents = TerminalTabsUtil.descDateSort(contentManager,"dd-MM-yy")
-        println(sortedContents)
+        TerminalTabsUtil.sortTabs(project, settingsService)
 
         val inOrder: InOrder = inOrder(contentManager)
         inOrder.verify(contentManager).addContent(contents[0])

@@ -17,6 +17,7 @@ import javax.swing.*
 class TerminalTabTailorConfigurable(private val project: Project) : Configurable {
     private val settingsService = service<TerminalTabTailorSettingsService>()
     private var useCurrentDate = JBCheckBox("Incorporate the current date into tab names.")
+    private var alreadyExists = JBCheckBox("Reuse an existing tab when the names match. (experimental)")
 
     private val chooseKindOfSortGroup = ButtonGroup()
     private var ascSort = JBRadioButton("Maintain tabs in perpetual alphabetical order.")
@@ -55,6 +56,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
         add(Box.createVerticalStrut(15))
 
         add(performManualRenaming)
+        add(alreadyExists)
         add(Box.createVerticalStrut(15))
         add(ascSort)
         add(descDateSort)
@@ -88,6 +90,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
 
     override fun createComponent(): JComponent {
         useCurrentDate.isSelected = settingsService.state.useCurrentDate
+        alreadyExists.isSelected = settingsService.state.alreadyExists
         performManualRenaming.isSelected = settingsService.state.performManualRenaming
         dateTemplate.text = settingsService.state.dateTemplate
 
@@ -124,6 +127,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
         }
 
         return useCurrentDate.isSelected != settingsService.state.useCurrentDate
+                || alreadyExists.isSelected != settingsService.state.alreadyExists
                 || performManualRenaming.isSelected != settingsService.state.performManualRenaming
                 || dateTemplate.text != settingsService.state.dateTemplate
                 || selectedTabNameSort != settingsService.state.selectedTabTypeSort
@@ -132,6 +136,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
 
     override fun apply() {
         settingsService.state.useCurrentDate = useCurrentDate.isSelected
+        settingsService.state.alreadyExists = alreadyExists.isSelected
         settingsService.state.performManualRenaming = performManualRenaming.isSelected
         settingsService.state.dateTemplate = dateTemplate.text
 

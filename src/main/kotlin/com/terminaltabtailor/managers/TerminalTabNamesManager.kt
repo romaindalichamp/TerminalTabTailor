@@ -1,5 +1,6 @@
 package com.terminaltabtailor.managers
 
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
@@ -7,18 +8,19 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.isFile
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
-import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.actions.ActionId
 import com.terminaltabtailor.enums.TabNameType
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
 class TerminalTabNamesManager {
     private val settingsService = service<TerminalTabTailorSettingsService>()
 
-    fun renameTerminalTab(
+    suspend fun manageNewTab(
         project: Project,
         lastSelectedVirtualFile: VirtualFile,
         lastSelectedVirtualFileParent: VirtualFile?,
@@ -32,26 +34,72 @@ class TerminalTabNamesManager {
                 ?.contentManager
                 ?: return null
 
-        return constructNewTabName(
-            project,
-            terminalContentManager,
-            TerminalTabsUtil.getLastOpenedTab(terminalContentManager) ?: return null,
-            lastSelectedVirtualFile,
-            lastSelectedVirtualFileParent,
-            lastSelectedVirtualFileParentModule,
-            lastSelectedVirtualFileParentModuleDirName
-        )
+        val newTerminalTabContent: Content? =
+            TerminalTabsUtil.getLastOpenedTab(terminalContentManager)
+
+        newTerminalTabContent?.let {
+            var newTerminalTab = it
+
+            val constructedName: String =
+                constructNewTabName(
+                    project,
+                    lastSelectedVirtualFile,
+                    lastSelectedVirtualFileParent,
+                    lastSelectedVirtualFileParentModule,
+                    lastSelectedVirtualFileParentModuleDirName
+                )
+
+            var alreadyExistingTerminalTab: Content? = null
+
+            if (settingsService.state.alreadyExists) {
+                alreadyExistingTerminalTab =
+                    TerminalTabsUtil.alreadyExistingTerminalTab(
+                        terminalContentManager.contents.toList(),
+                        constructedName
+                    )
+                if (alreadyExistingTerminalTab != null) {
+                    withContext(Dispatchers.EDT) {
+                        TerminalTabsUtil.removeJustCreatedTerminalTab(
+                            terminalContentManager,
+                            newTerminalTab.displayName
+                        )
+                        newTerminalTab = alreadyExistingTerminalTab
+                    }
+                }
+            }
+
+            if (!settingsService.state.alreadyExists
+                || (settingsService.state.alreadyExists && alreadyExistingTerminalTab == null)
+            ) {
+                val (newDisplayName, newTabName) = TerminalTabsUtil.incrementNumberInName(
+                    terminalContentManager.contents.toList(),
+                    constructedName
+                )
+                newTerminalTab.displayName = newDisplayName
+                newTerminalTab.tabName = newTabName
+            }
+
+            withContext(Dispatchers.EDT) {
+                TerminalTabsUtil.sortTabs(project, settingsService)
+                TerminalTabsUtil.selectNewTab(project, newTerminalTab.displayName)
+                TerminalTabsUtil.activateTerminalWindow(project)
+
+                if (settingsService.state.performManualRenaming) {
+                    TerminalTabsUtil.performManualRenamingAction(newTerminalTab)
+                }
+            }
+        }
+
+        return newTerminalTabContent
     }
 
     private fun constructNewTabName(
         project: Project,
-        terminals: ContentManager,
-        newTerminalTab: Content,
         lastSelectedVirtualFile: VirtualFile,
         lastSelectedVirtualFileParent: VirtualFile?,
         lastSelectedVirtualFileParentModule: Module?,
         lastSelectedVirtualFileParentModuleDirName: String?,
-    ): Content {
+    ): String {
         var name = lastSelectedVirtualFile.name
 
         name = when {
@@ -77,12 +125,6 @@ class TerminalTabNamesManager {
             name += " <${SimpleDateFormat(settingsService.state.dateTemplate).format(Date())}>"
         }
 
-        val (newDisplayName, newTabName) =
-            TerminalTabsUtil.getNextAvailableTabName(terminals.contents.toList(), name);
-
-        newTerminalTab.displayName = newDisplayName
-        newTerminalTab.tabName = newTabName
-
-        return newTerminalTab
+        return name
     }
 }

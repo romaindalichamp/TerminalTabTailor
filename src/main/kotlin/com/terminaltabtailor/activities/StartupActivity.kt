@@ -16,10 +16,16 @@ class StartupActivity : ProjectActivity {
         )
 
         val actionManager = ActionManager.getInstance()
-        actionManager.getAction(ActionId.TERMINAL_RENAME_SESSION_ID)?.let {
-            actionManager.replaceAction(
-                ActionId.TERMINAL_RENAME_SESSION_ID, CustomRenameTerminalSessionAction()
-            )
-        }
+        actionManager
+            .getAction(ActionId.TERMINAL_RENAME_SESSION_ID)?.let {
+                actionManager
+                    .replaceAction(
+                        ActionId.TERMINAL_RENAME_SESSION_ID,
+                        CustomRenameTerminalSessionAction(
+                            ActionId.TERMINAL_RENAME_SESSION_ID,
+                            "Rename Session"
+                        )
+                    )
+            }
     }
 }
