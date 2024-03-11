@@ -11,8 +11,6 @@ import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.actions.ActionId
 import com.terminaltabtailor.enums.TabNameSort
-import com.terminaltabtailor.listeners.TerminalActionListener
-import com.terminaltabtailor.managers.TerminalTabNamesManager
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -31,16 +29,15 @@ class TerminalTabsUtil {
             }
         }
 
-        fun getNextAvailableTabName(names: List<Content>, prefix: String): Pair<String, String> {
+        fun incrementNumberInName(names: List<Content>, prefix: String): Pair<String, String> {
             val usedNumbers = names.asSequence()
-                .filter { it.tabName.startsWith(prefix) }
+                .filter { it.displayName.startsWith(prefix) }
                 .map { tab ->
-                    numberRegex.find(tab.tabName)
+                    numberRegex.find(tab.displayName)
                         ?.value
                         ?.removeSurrounding("(", ")")
-                        ?.toInt() ?: 0
+                        ?.toInt() ?: 1
                 }.toSortedSet()
-
             var nextNumber = 1
             while (nextNumber in usedNumbers) {
                 nextNumber++
@@ -48,27 +45,22 @@ class TerminalTabsUtil {
 
             val prefixWithNumber = "$prefix ($nextNumber)"
 
-            return Pair(if (nextNumber == 1) prefix else prefixWithNumber, prefixWithNumber)
+            return Pair(if (nextNumber == 1 && usedNumbers.isEmpty()) prefix else prefixWithNumber, prefixWithNumber)
         }
 
-        fun ascSort(project: Project) {
-            ToolWindowManager
-                .getInstance(project)
-                .getToolWindow(ActionId.TOOL_WINDOW_ID)
-                ?.contentManager
-                ?.let { manager ->
-                    manager
-                        .contents
-                        .sortedBy { it.displayName.lowercase(Locale.getDefault()) }
-                        .forEach { content ->
-                            manager.removeContent(content, false)
-                            manager.addContent(content)
-                        }
+        private fun ascSort(manager: ContentManager) {
+            manager
+                .contents
+                .sortedBy { it.displayName.lowercase(Locale.getDefault()) }
+                .forEach { content ->
+                    manager.removeContent(content, false)
+                    manager.addContent(content)
                 }
+
         }
 
-        fun descDateSort(tabs: ContentManager?, dateFormatter: String) {
-            tabs?.let {
+        private fun descDateSort(tabs: ContentManager, dateFormatter: String) {
+            tabs.let {
                 tabs.contents.sortedWith { previous, next ->
                     val previousDisplayName = previous.displayName.lowercase(Locale.getDefault())
                     val nextDisplayName = next.displayName.lowercase(Locale.getDefault())
@@ -83,6 +75,7 @@ class TerminalTabsUtil {
                                 nextDisplayName
                             )
                         }
+
                         previousDate != null && nextDate == null -> -1
                         previousDate == null && nextDate != null -> 1
                         else -> previousDisplayName.compareTo(nextDisplayName)
@@ -140,21 +133,6 @@ class TerminalTabsUtil {
             }
         }
 
-        fun renameTab(
-            project: Project,
-            terminalTabNamesManager: TerminalTabNamesManager,
-            virtualSelection: TerminalActionListener.VirtualSelection
-        ): Content? {
-            return terminalTabNamesManager
-                .renameTerminalTab(
-                    project,
-                    virtualSelection.lastSelectedVirtualFile!!,
-                    virtualSelection.lastSelectedVirtualFileParent,
-                    virtualSelection.lastSelectedVirtualFileParentModule,
-                    virtualSelection.lastSelectedVirtualFileParentModuleDirName
-                )
-        }
-
         fun selectNewTab(project: Project, newDisplayName: String) {
             val contentManager: ContentManager? =
                 ToolWindowManager
@@ -171,16 +149,36 @@ class TerminalTabsUtil {
 
 
         fun sortTabs(project: Project, settingsService: TerminalTabTailorSettingsService) {
-            when (settingsService.state.selectedTabTypeSort) {
-                TabNameSort.ASC -> ascSort(project)
-                TabNameSort.DESC_DATE -> descDateSort(
-                    ToolWindowManager
-                        .getInstance(project)
-                        .getToolWindow(ActionId.TOOL_WINDOW_ID)
-                        ?.contentManager,
-                    settingsService.state.dateTemplate
-                )
+            val contentManager = ToolWindowManager
+                .getInstance(project)
+                .getToolWindow(ActionId.TOOL_WINDOW_ID)
+                ?.contentManager
+
+            contentManager?.let {
+                when (settingsService.state.selectedTabTypeSort) {
+                    TabNameSort.ASC -> ascSort(contentManager)
+                    TabNameSort.DESC_DATE -> descDateSort(
+                        contentManager,
+                        settingsService.state.dateTemplate
+                    )
+                }
             }
+        }
+
+        fun removeJustCreatedTerminalTab(
+            terminalTabs: ContentManager,
+            newCreatedTerminalName: String
+        ) {
+            terminalTabs.contents
+                .filter { it.displayName == newCreatedTerminalName }
+                .map { content -> terminalTabs.removeContent(content, false) }
+        }
+
+        fun alreadyExistingTerminalTab(
+            terminalTabs: List<Content>,
+            constructedName: String
+        ): Content? {
+            return terminalTabs.firstOrNull { it.displayName == constructedName }
         }
     }
 }

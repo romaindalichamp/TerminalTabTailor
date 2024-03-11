@@ -5,11 +5,16 @@
   </vendor>
 
   <change-notes><![CDATA[
-    <b>What's New in TerminalTabTailor 1.1.1</b>
+    <b>What's New ?</b>
     <br/><br/>
+    <b>Improvements</b>
+    <ul>
+      <li><b>New setting:</b> Reuse an existing tab when the names match. (experimental)</li>
+    </ul>
+    <br/>
     <b>Fix:</b>
     <ul>
-      <li><b>Double Shift menu:</b> Handle the scenario where no files are selected upon initiating a terminal through the "Double Shift" menu action "Open in Terminal".</li>
+      <li><b>Empty menu item text error:</b> add missing default text for Rename Session menu item.</li>
     </ul>
   ]]></change-notes>
 
@@ -55,4 +60,14 @@
       <implementation-class>com.terminaltabtailor.activities.StartupActivity</implementation-class>
     </component>
   </application-components>
+
+  <actions>
+    <action
+      id="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
+      class="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
+      text="Rename Session"
+      description="Action to rename terminal sessions">
+      <add-to-group group-id="ToolWindowContextMenu" anchor="first"/>
+    </action>
+  </actions>
 </idea-plugin>

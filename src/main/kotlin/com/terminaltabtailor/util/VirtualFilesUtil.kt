@@ -3,20 +3,19 @@ package com.terminaltabtailor.util
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.terminaltabtailor.listeners.TerminalActionListener
 
 class VirtualFilesUtil {
     companion object {
-        fun getVirtualFilesFromContext(dataContext: DataContext): Array<out VirtualFile>? {
-            return CommonDataKeys.VIRTUAL_FILE_ARRAY.getData(dataContext)
+        private fun getVirtualFileFromContext(dataContext: DataContext): VirtualFile? {
+            return CommonDataKeys.VIRTUAL_FILE.getData(dataContext)
         }
 
         /*
@@ -34,18 +33,18 @@ class VirtualFilesUtil {
             event: AnActionEvent
         ): TerminalActionListener.VirtualSelection {
             val virtualSelection = TerminalActionListener
-            var virtualFiles: Array<VirtualFile>? = null
+            var virtualFile: VirtualFile? = null
 
             ApplicationManager.getApplication().runReadAction {
                 runCatching {
-                    virtualFiles = event.getData(PlatformDataKeys.VIRTUAL_FILE_ARRAY)
+                    virtualFile = getVirtualFileFromContext(event.dataContext)
                 }.getOrElse {
-                    virtualFiles = ProjectRootManager.getInstance(project).contentRoots
+                    virtualFile = getRootNodeVirtualFileAsArray(project)
                 }
             }
 
-            virtualFiles?.firstOrNull().let { virtualFile ->
-                virtualSelection.lastSelectedVirtualFile = virtualFile
+            virtualFile?.let { vFile ->
+                virtualSelection.lastSelectedVirtualFile = vFile
 
                 virtualSelection.let {
 
@@ -54,20 +53,32 @@ class VirtualFilesUtil {
                         virtualSelection.lastSelectedVirtualFileParent =
                             virtualSelection.lastSelectedVirtualFile!!.parent
 
-                        val module = ModuleUtilCore.findModuleForFile(
-                            virtualSelection.lastSelectedVirtualFile!!,
-                            project
-                        )
-                        virtualSelection.lastSelectedVirtualFileParentModule = module
+                        ApplicationManager.getApplication().runReadAction {
+                            runCatching {
+                                val module = ModuleUtilCore.findModuleForFile(
+                                    virtualSelection.lastSelectedVirtualFile!!,
+                                    project
+                                )
+                                virtualSelection.lastSelectedVirtualFileParentModule = module
 
-                        virtualSelection.lastSelectedVirtualFileParentModuleDirName =
-                            getModuleDirectoryName(
-                                virtualSelection.lastSelectedVirtualFileParentModule
-                            )
+
+                                virtualSelection.lastSelectedVirtualFileParentModuleDirName =
+                                    getModuleDirectoryName(
+                                        virtualSelection.lastSelectedVirtualFileParentModule
+                                    )
+                            }
+                        }
                     }
                 }
             }
             return virtualSelection
+        }
+
+        private fun getRootNodeVirtualFileAsArray(project: Project): VirtualFile? {
+            val basePath: String? = project.basePath
+            return basePath?.let {
+                LocalFileSystem.getInstance().findFileByPath(it)
+            }
         }
     }
 }
