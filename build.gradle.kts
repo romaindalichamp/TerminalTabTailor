@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.romaindalichamp"
-version = "1.2.1"
+version = "1.3.0"
 
 repositories {
     mavenCentral()
@@ -42,11 +42,14 @@ tasks {
     }
 }
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.0")
-    testImplementation("org.mockito:mockito-core:3.+")
-    testImplementation("org.mockito:mockito-junit-jupiter:3.+")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.0.0-Beta3")
+    val mockitoVersion = "3+"
+    val junitJupiter = "5.7.0"
+    val kotlinTestJunit = "2.0.0-Beta3"
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiter")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiter")
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinTestJunit")
 }
 
 tasks.test {

@@ -4,7 +4,9 @@ Terminal Tab Tailor significantly enhances the IntelliJ IDEA workflow by dynamic
 
 Simply select a file or folder within your project tree and initiate a terminal session from that context.
 
-![img_4.png](img_4.png)
+**Pro-tip**: *Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.*
+
+![img_3.png](img_3.png)
 
 Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
 * Prompt the renaming dialogue each time a new terminal tab is opened.
@@ -23,5 +25,3 @@ Choose from a variety of naming conventions to suit your workflow:
 * Adopt the name of the parent module.
 * Use the parent module's directory name for a more structured approach.
 * Consistently use the project's name for all terminal tabs.
-
-*Pro-tip*: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action, streamlining the process of opening terminals in your desired context.

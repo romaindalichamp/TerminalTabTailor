@@ -9,12 +9,7 @@
     <br/><br/>
     <b>Improvements</b>
     <ul>
-      <li><b>New setting:</b> Reuse an existing tab when the names match (was experimental, and is now stable)</li>
-    </ul>
-    <br/>
-    <b>Refactor:</b>
-    <ul>
-      <li><b>Override RevealFileInTerminalAction:</b>The plugin was using a Listener, which lead to issues with the new setting to reuse a terminal, but also when multiple projects where open.</li>
+      <li><b>Feature:</b> Add an option allowing for unsorted tab arrangement.</li>
     </ul>
   ]]></change-notes>
 
@@ -23,11 +18,14 @@
     <br/><br/>
     Simply select a file or folder within your project tree and initiate a terminal session from that context.
     <br/><br/>
+    <b>Pro-tip</b>: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action
+    <br/><br/>
     Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
     <ul>
       <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
       <li>Maintain tabs in perpetual alphabetical order.</li>
       <li>Maintain tabs sorted by descending date.</li>
+      <li>Do not sort tabs.</li>
       <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
     </ul>
     <br/><br/>
@@ -39,8 +37,6 @@
       <li>Use the parent module's directory name for a more structured approach.</li>
       <li>Consistently use the project's name for all terminal tabs.</li>
     </ul>
-    <br/><br/>
-    <b>Pro-tip</b>: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action, streamlining the process of opening terminals in your desired context.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
