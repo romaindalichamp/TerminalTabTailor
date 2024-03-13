@@ -48,6 +48,8 @@ class CustomRenameTerminalSessionAction(
         project: Project,
         @Nls newContentName: String
     ) {
+        val contentManager = TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager
+
         TerminalToolWindowManager.findWidgetByContent(content)?.terminalTitle?.change {
             userDefinedTitle = newContentName
         }
@@ -56,9 +58,11 @@ class CustomRenameTerminalSessionAction(
 
         GlobalScope.launch {
             withContext(Dispatchers.EDT) {
-                TerminalTabsUtil.sortTabs(project, settingsService)
-                TerminalTabsUtil.selectNewTab(project, newContentName)
-                TerminalTabsUtil.activateTerminalWindow(project)
+                contentManager?.let {
+                    TerminalTabsUtil.sortTabs(it, settingsService)
+                    TerminalTabsUtil.selectNewTab(it, newContentName)
+                    TerminalTabsUtil.activateTerminalWindow(project)
+                }
             }
         }
     }

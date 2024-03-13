@@ -65,9 +65,17 @@
     <action
       id="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
       class="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
+      icon="org.jetbrains.plugins.terminal.TerminalIcons.OpenTerminal_13x13">
       text="Rename Session"
-      description="Action to rename terminal sessions">
       <add-to-group group-id="ToolWindowContextMenu" anchor="first"/>
+    </action>
+    <action id="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
+      class="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
+      icon="org.jetbrains.plugins.terminal.TerminalIcons.OpenTerminal_13x13"
+      text="Open in terminal">
+      <add-to-group group-id="RevealGroup" anchor="last"/>
+      <override-text place="RevealInPopup"/>
+      <add-to-group group-id="TouchBarDefault_alt" anchor="last"/>
     </action>
   </actions>
 </idea-plugin>
