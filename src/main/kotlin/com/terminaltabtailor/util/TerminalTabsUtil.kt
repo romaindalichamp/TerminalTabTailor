@@ -141,6 +141,7 @@ class TerminalTabsUtil {
 
         fun sortTabs(contentManager: ContentManager, settingsService: TerminalTabTailorSettingsService) {
             when (settingsService.state.selectedTabTypeSort) {
+                TabNameSort.NO_SORT -> return
                 TabNameSort.ASC -> ascSort(contentManager)
                 TabNameSort.DESC_DATE -> descDateSort(
                     contentManager,

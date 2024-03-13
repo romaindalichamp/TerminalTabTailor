@@ -23,6 +23,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
     private val chooseKindOfSortGroup = ButtonGroup()
     private var ascSort = JBRadioButton("Maintain tabs in perpetual alphabetical order.")
     private var descDateSort = JBRadioButton("Maintain tabs sorted by descending date.")
+    private var noSort = JBRadioButton("Do not sort tabs.")
 
     private var dateTemplate = JBTextField()
     private var performManualRenaming =
@@ -52,6 +53,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
 
         chooseKindOfSortGroup.add(ascSort)
         chooseKindOfSortGroup.add(descDateSort)
+        chooseKindOfSortGroup.add(noSort)
 
         add(JBLabel("Options"))
         add(Box.createVerticalStrut(15))
@@ -61,6 +63,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
         add(Box.createVerticalStrut(15))
         add(ascSort)
         add(descDateSort)
+        add(noSort)
         add(Box.createVerticalStrut(15))
         add(useCurrentDate)
         dateTemplatePanel.add(JBLabel("Choose a template to display the date in your tab's name: "))
@@ -98,6 +101,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
         when (settingsService.state.selectedTabTypeSort) {
             TabNameSort.ASC -> ascSort.isSelected = true
             TabNameSort.DESC_DATE -> descDateSort.isSelected = true
+            TabNameSort.NO_SORT -> noSort.isSelected = true
         }
 
         when (settingsService.state.selectedTabTypeName) {
@@ -115,6 +119,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
         val selectedTabNameSort = when {
             ascSort.isSelected -> TabNameSort.ASC
             descDateSort.isSelected -> TabNameSort.DESC_DATE
+            noSort.isSelected -> TabNameSort.NO_SORT
             else -> TabNameSort.ASC
         }
 
@@ -144,6 +149,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
         settingsService.state.selectedTabTypeSort = when {
             ascSort.isSelected -> TabNameSort.ASC
             descDateSort.isSelected -> TabNameSort.DESC_DATE
+            noSort.isSelected -> TabNameSort.NO_SORT
             else -> TabNameSort.ASC
         }
 

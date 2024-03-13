@@ -154,6 +154,35 @@ class TerminalTabsUtilTest {
         inOrder.verify(contentManager).addContent(contents[2])
     }
 
+    @Test
+    fun `test doNotSort sort`() {
+        val project = mock(Project::class.java)
+        val toolWindowManager = mock(ToolWindowManager::class.java)
+        val toolWindow = mock(ToolWindow::class.java)
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+
+        val contents = arrayOf(
+            createMockContent("UPPERCASE <03-04-24>"),
+            createMockContent("nodate"),
+            createMockContent("WRONG_DATE <2222-55-888>"),
+            createMockContent("aaaa <02-04-24>")
+        )
+
+        `when`(project.getService(ToolWindowManager::class.java)).thenReturn(toolWindowManager)
+        `when`(toolWindowManager.getToolWindow("Terminal")).thenReturn(toolWindow)
+        `when`(toolWindow.contentManager).thenReturn(contentManager)
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.NO_SORT)
+        `when`(settingsState.dateTemplate).thenReturn("dd-MM-yy")
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService)
+
+        verifyNoInteractions(contentManager)
+    }
+
     private fun createMockContent(name: String): Content {
         val content = mock(Content::class.java)
         `when`(content.tabName).thenReturn(name)
