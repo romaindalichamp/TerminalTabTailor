@@ -18,7 +18,7 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
     private val settingsService = service<TerminalTabTailorSettingsService>()
     private var useCurrentDate = JBCheckBox("Incorporate the current date into tab names.")
     private var alreadyExists =
-        JBCheckBox("Reuse an existing tab when the names match. (experimental)")
+        JBCheckBox("Reuse an existing tab when the names match.")
 
     private val chooseKindOfSortGroup = ButtonGroup()
     private var ascSort = JBRadioButton("Maintain tabs in perpetual alphabetical order.")
