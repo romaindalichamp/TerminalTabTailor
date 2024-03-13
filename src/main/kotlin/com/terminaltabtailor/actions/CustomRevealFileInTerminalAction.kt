@@ -2,7 +2,10 @@ package com.terminaltabtailor.actions
 
 import com.intellij.ide.actions.RevealFileAction
 import com.intellij.ide.lightEdit.LightEdit
-import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.project.DumbAwareAction
@@ -38,7 +41,7 @@ class CustomRevealFileInTerminalAction(
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.text=text
+        e.presentation.text = text
         e.presentation.isEnabledAndVisible = isAvailable(e)
     }
 
@@ -57,30 +60,28 @@ class CustomRevealFileInTerminalAction(
     override fun actionPerformed(e: AnActionEvent) {
         e.project?.let { project ->
             getSelectedFile(e)?.let { selectedFile ->
-                TerminalTabsUtil
-                    .getTerminalToolWindow(project)
-                    ?.contentManager?.let { terminalToolWindowContentManger ->
+                TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager?.let { terminalToolWindowContentManger ->
 
-                        ApplicationManager.getApplication().invokeLater {
-                            GlobalScope.launch {
-                                if (!TerminalTabNamesManager.reuseExistingTab(
-                                        project,
-                                        terminalToolWindowContentManger,
-                                        selectedFile
-                                    )
-                                ) {
-                                    withContext(Dispatchers.EDT) {
-                                        TerminalToolWindowManager.getInstance(project).openTerminalIn(selectedFile)
-                                    }
-                                    TerminalTabNamesManager.renameNewTab(
-                                        project,
-                                        terminalToolWindowContentManger,
-                                        selectedFile
-                                    )
+                    ApplicationManager.getApplication().invokeLater {
+                        GlobalScope.launch {
+                            if (!TerminalTabNamesManager.reuseExistingTab(
+                                    project,
+                                    terminalToolWindowContentManger,
+                                    selectedFile
+                                )
+                            ) {
+                                withContext(Dispatchers.EDT) {
+                                    TerminalToolWindowManager.getInstance(project).openTerminalIn(selectedFile)
                                 }
+                                TerminalTabNamesManager.renameNewTab(
+                                    project,
+                                    terminalToolWindowContentManger,
+                                    selectedFile
+                                )
                             }
                         }
                     }
+                }
 
             }
 

@@ -30,7 +30,7 @@ class TerminalTabsUtil {
             }
         }
 
-        fun incrementNumberInName(names: List<Content>, prefix: String): Pair<String, String> {
+        fun incrementNumberInName(names: List<Content>, prefix: String): String {
             val usedNumbers = names.asSequence()
                 .filter { it.displayName.startsWith(prefix) }
                 .map { tab ->
@@ -46,10 +46,7 @@ class TerminalTabsUtil {
 
             val prefixWithNumber = "$prefix ($nextNumber)"
 
-            return Pair(
-                if (nextNumber == 1 && usedNumbers.isEmpty()) prefix else prefixWithNumber,
-                prefixWithNumber
-            )
+            return if (nextNumber == 1 || usedNumbers.isEmpty()) prefix else prefixWithNumber
         }
 
         private fun ascSort(manager: ContentManager) {

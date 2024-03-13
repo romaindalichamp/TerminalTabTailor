@@ -131,11 +131,11 @@ class TerminalTabNamesManager {
                 TerminalTabsUtil.getLastOpenedTab(terminalToolWindowContentManger)
                     ?.let { newTerminalTabContent ->
 
-                        val (newDisplayName, newTabName) = TerminalTabsUtil.incrementNumberInName(
+                        val newDisplayName = TerminalTabsUtil.incrementNumberInName(
                             terminalToolWindowContentManger.contents.toList(), constructedName
                         )
                         newTerminalTabContent.displayName = newDisplayName
-                        newTerminalTabContent.tabName = newTabName
+                        newTerminalTabContent.tabName = newDisplayName
 
                         withContext(Dispatchers.EDT) {
                             TerminalTabsUtil.sortTabs(
