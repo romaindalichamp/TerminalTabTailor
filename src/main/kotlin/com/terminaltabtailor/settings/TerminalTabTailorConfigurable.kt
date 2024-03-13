@@ -17,7 +17,8 @@ import javax.swing.*
 class TerminalTabTailorConfigurable(private val project: Project) : Configurable {
     private val settingsService = service<TerminalTabTailorSettingsService>()
     private var useCurrentDate = JBCheckBox("Incorporate the current date into tab names.")
-    private var alreadyExists = JBCheckBox("Reuse an existing tab when the names match. (experimental)")
+    private var alreadyExists =
+        JBCheckBox("Reuse an existing tab when the names match.")
 
     private val chooseKindOfSortGroup = ButtonGroup()
     private var ascSort = JBRadioButton("Maintain tabs in perpetual alphabetical order.")
@@ -155,7 +156,9 @@ class TerminalTabTailorConfigurable(private val project: Project) : Configurable
             else -> TabNameType.MODULE_NAME
         }
 
-        TerminalTabsUtil.sortTabs(project, settingsService)
-        TerminalTabsUtil.activateTerminalWindow(project)
+        TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager?.let {
+            TerminalTabsUtil.sortTabs(it, settingsService)
+            TerminalTabsUtil.activateTerminalWindow(project)
+        }
     }
 }

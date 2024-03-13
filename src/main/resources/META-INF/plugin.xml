@@ -9,12 +9,12 @@
     <br/><br/>
     <b>Improvements</b>
     <ul>
-      <li><b>New setting:</b> Reuse an existing tab when the names match. (experimental)</li>
+      <li><b>New setting:</b> Reuse an existing tab when the names match (was experimental, and is now stable)</li>
     </ul>
     <br/>
-    <b>Fix:</b>
+    <b>Refactor:</b>
     <ul>
-      <li><b>Empty menu item text error:</b> add missing default text for Rename Session menu item.</li>
+      <li><b>Override RevealFileInTerminalAction:</b>The plugin was using a Listener, which lead to issues with the new setting to reuse a terminal, but also when multiple projects where open.</li>
     </ul>
   ]]></change-notes>
 
@@ -65,9 +65,16 @@
     <action
       id="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
       class="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
-      text="Rename Session"
-      description="Action to rename terminal sessions">
+      text="Rename Session">
       <add-to-group group-id="ToolWindowContextMenu" anchor="first"/>
+    </action>
+    <action id="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
+      class="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
+      icon="org.jetbrains.plugins.terminal.TerminalIcons.OpenTerminal_13x13"
+      text="Open in terminal">
+      <add-to-group group-id="RevealGroup" anchor="last"/>
+      <override-text place="RevealInPopup"/>
+      <add-to-group group-id="TouchBarDefault_alt" anchor="last"/>
     </action>
   </actions>
 </idea-plugin>

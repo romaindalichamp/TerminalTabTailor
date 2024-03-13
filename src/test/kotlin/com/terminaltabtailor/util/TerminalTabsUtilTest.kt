@@ -52,30 +52,41 @@ class TerminalTabsUtilTest {
 
         val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
 
-        assertEquals(Pair("Tab (4)", "Tab (4)"), result)
+        assertEquals("Tab (4)", result)
     }
 
     @Test
-    fun `getNextAvailableTabName returns prefix only when no numbers are used`() {
+    fun `getNextAvailableTabName returns no prefix only when no tab exists`() {
         val prefix = "Tab"
         val existingTabs = listOf<Content>()
 
         val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
 
-        assertEquals(Pair("Tab", "Tab (1)"), result)
+        assertEquals("Tab", result)
     }
+
+    @Test
+    fun `getNextAvailableTabName returns prefix only when no numbers are used`() {
+        val prefix = "Tab"
+        val existingTabs = listOf(createMockContent("Tab"))
+
+        val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
+
+        assertEquals("Tab (2)", result)
+    }
+
 
     @Test
     fun `getNextAvailableTabName skips missing numbers`() {
         val prefix = "Tab"
         val existingTabs = listOf(
-            createMockContent("Tab (1)"),
+            createMockContent("Tab"),
             createMockContent("Tab (3)")
         )
 
         val result = TerminalTabsUtil.incrementNumberInName(existingTabs, prefix)
 
-        assertEquals(Pair("Tab (2)", "Tab (2)"), result)
+        assertEquals("Tab (2)", result)
     }
 
 
@@ -99,7 +110,7 @@ class TerminalTabsUtilTest {
         `when`(settingsService.state).thenReturn(settingsState)
         `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.ASC)
 
-        TerminalTabsUtil.sortTabs(project, settingsService)
+        TerminalTabsUtil.sortTabs(contentManager, settingsService)
 
         val inOrder = inOrder(contentManager)
         inOrder.verify(contentManager)
@@ -134,7 +145,7 @@ class TerminalTabsUtilTest {
         `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.DESC_DATE)
         `when`(settingsState.dateTemplate).thenReturn("dd-MM-yy")
 
-        TerminalTabsUtil.sortTabs(project, settingsService)
+        TerminalTabsUtil.sortTabs(contentManager, settingsService)
 
         val inOrder: InOrder = inOrder(contentManager)
         inOrder.verify(contentManager).addContent(contents[0])

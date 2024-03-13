@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
@@ -29,7 +30,7 @@ class TerminalTabsUtil {
             }
         }
 
-        fun incrementNumberInName(names: List<Content>, prefix: String): Pair<String, String> {
+        fun incrementNumberInName(names: List<Content>, prefix: String): String {
             val usedNumbers = names.asSequence()
                 .filter { it.displayName.startsWith(prefix) }
                 .map { tab ->
@@ -45,7 +46,7 @@ class TerminalTabsUtil {
 
             val prefixWithNumber = "$prefix ($nextNumber)"
 
-            return Pair(if (nextNumber == 1 && usedNumbers.isEmpty()) prefix else prefixWithNumber, prefixWithNumber)
+            return if (nextNumber == 1 || usedNumbers.isEmpty()) prefix else prefixWithNumber
         }
 
         private fun ascSort(manager: ContentManager) {
@@ -109,10 +110,7 @@ class TerminalTabsUtil {
         }
 
         fun activateTerminalWindow(project: Project) {
-            ToolWindowManager
-                .getInstance(project)
-                .getToolWindow(ActionId.TOOL_WINDOW_ID)
-                ?.activate(null)
+            getTerminalToolWindow(project)?.activate(null)
         }
 
         private fun extractDateUsingSubstring(input: String, pattern: String): LocalDate? {
@@ -133,45 +131,22 @@ class TerminalTabsUtil {
             }
         }
 
-        fun selectNewTab(project: Project, newDisplayName: String) {
-            val contentManager: ContentManager? =
-                ToolWindowManager
-                    .getInstance(project)
-                    .getToolWindow(ActionId.TOOL_WINDOW_ID)
-                    ?.contentManager
-
-            contentManager?.contents?.forEach { content ->
+        fun selectNewTab(contentManager: ContentManager, newDisplayName: String) {
+            contentManager.contents.forEach { content ->
                 if (content.displayName == newDisplayName) {
                     contentManager.setSelectedContent(content)
                 }
             }
         }
 
-
-        fun sortTabs(project: Project, settingsService: TerminalTabTailorSettingsService) {
-            val contentManager = ToolWindowManager
-                .getInstance(project)
-                .getToolWindow(ActionId.TOOL_WINDOW_ID)
-                ?.contentManager
-
-            contentManager?.let {
-                when (settingsService.state.selectedTabTypeSort) {
-                    TabNameSort.ASC -> ascSort(contentManager)
-                    TabNameSort.DESC_DATE -> descDateSort(
-                        contentManager,
-                        settingsService.state.dateTemplate
-                    )
-                }
+        fun sortTabs(contentManager: ContentManager, settingsService: TerminalTabTailorSettingsService) {
+            when (settingsService.state.selectedTabTypeSort) {
+                TabNameSort.ASC -> ascSort(contentManager)
+                TabNameSort.DESC_DATE -> descDateSort(
+                    contentManager,
+                    settingsService.state.dateTemplate
+                )
             }
-        }
-
-        fun removeJustCreatedTerminalTab(
-            terminalTabs: ContentManager,
-            newCreatedTerminalName: String
-        ) {
-            terminalTabs.contents
-                .filter { it.displayName == newCreatedTerminalName }
-                .map { content -> terminalTabs.removeContent(content, false) }
         }
 
         fun alreadyExistingTerminalTab(
@@ -179,6 +154,12 @@ class TerminalTabsUtil {
             constructedName: String
         ): Content? {
             return terminalTabs.firstOrNull { it.displayName == constructedName }
+        }
+
+        fun getTerminalToolWindow(project: Project): ToolWindow? {
+            return ToolWindowManager
+                .getInstance(project)
+                .getToolWindow(ActionId.TOOL_WINDOW_ID)
         }
     }
 }
