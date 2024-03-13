@@ -2,13 +2,11 @@ package com.terminaltabtailor.actions
 
 import com.intellij.ide.actions.RevealFileAction
 import com.intellij.ide.lightEdit.LightEdit
-import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.actionSystem.ActionUpdateThread
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.vfs.VirtualFile
 import com.terminaltabtailor.managers.TerminalTabNamesManager
 import com.terminaltabtailor.util.TerminalTabsUtil
@@ -32,7 +30,7 @@ import org.jetbrains.plugins.terminal.TerminalToolWindowManager
  * This enhanced action can be triggered from any sources where the traditional action is used.
  */
 class CustomRevealFileInTerminalAction(
-    text: String = TerminalBundle.message(ActionId.RENAME_SESSION_LABEL_ID)
+    @NlsContexts.Label val text: String = TerminalBundle.message(ActionId.OPEN_IN_TERMINAL_TEXT_ID)
 ) : DumbAwareAction() {
 
     override fun getActionUpdateThread(): ActionUpdateThread {
@@ -40,6 +38,7 @@ class CustomRevealFileInTerminalAction(
     }
 
     override fun update(e: AnActionEvent) {
+        e.presentation.text=text
         e.presentation.isEnabledAndVisible = isAvailable(e)
     }
 

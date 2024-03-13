@@ -11,7 +11,6 @@ import com.terminaltabtailor.util.TerminalTabsUtil
 import kotlinx.coroutines.*
 import org.jetbrains.annotations.Nls
 import org.jetbrains.plugins.terminal.TerminalBundle
-import org.jetbrains.plugins.terminal.TerminalToolWindowFactory
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager
 
 /**
@@ -33,14 +32,15 @@ import org.jetbrains.plugins.terminal.TerminalToolWindowManager
  * - Automatically, through the plugin, if the user has enabled the option to "Prompt the renaming dialogue each time a new terminal tab is opened."
  */
 class CustomRenameTerminalSessionAction(
-    toolWindow: String = TerminalToolWindowFactory.TOOL_WINDOW_ID,
+    actionId: String = ActionId.TOOL_WINDOW_ID,
     text: String = TerminalBundle.message(ActionId.RENAME_SESSION_LABEL_ID)
 ) : ToolWindowTabRenameActionBase(
-    toolWindow,
-    text,
+    actionId,
+    text
 ), DumbAware {
 
     private val settingsService = service<TerminalTabTailorSettingsService>()
+
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun applyContentDisplayName(

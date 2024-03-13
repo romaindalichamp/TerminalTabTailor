@@ -6,6 +6,7 @@ import com.intellij.openapi.startup.ProjectActivity
 import com.terminaltabtailor.actions.ActionId
 import com.terminaltabtailor.actions.CustomRenameTerminalSessionAction
 import com.terminaltabtailor.actions.CustomRevealFileInTerminalAction
+import org.jetbrains.plugins.terminal.TerminalBundle
 
 class StartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -17,7 +18,7 @@ class StartupActivity : ProjectActivity {
                         ActionId.TERMINAL_RENAME_SESSION_ID,
                         CustomRenameTerminalSessionAction(
                             ActionId.TERMINAL_RENAME_SESSION_ID,
-                            "Rename Session"
+                            TerminalBundle.message(ActionId.RENAME_SESSION_LABEL_ID)
                         )
                     )
             }
