@@ -8,7 +8,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.isFile
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
-import com.terminaltabtailor.dto.VirtualSelection
+import com.terminaltabtailor.data.VirtualSelection
 import com.terminaltabtailor.enums.TabNameType
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
@@ -106,7 +106,7 @@ class TerminalTabNamesManager {
             return false
         }
 
-        suspend fun renameNewTab(
+        private suspend fun renameNewTab(
             terminalToolWindowContentManger: ContentManager,
             project: Project,
             lastSelectedVirtualFile: VirtualFile,

@@ -7,9 +7,9 @@
   <change-notes><![CDATA[
     <b>What's New ?</b>
     <br/><br/>
-    <b>Improvements</b>
+    <b>Refactor</b>
     <ul>
-      <li><b>Feature:</b> Add an option allowing for unsorted tab arrangement.</li>
+      <li><b>Settings:</b> Refactor settings using Kotlin UI DSL Version 2.</li>
     </ul>
   ]]></change-notes>
 
@@ -51,12 +51,6 @@
       serviceImplementation="com.terminaltabtailor.settings.TerminalTabTailorSettingsService"/>
   </extensions>
 
-  <application-components>
-    <component>
-      <implementation-class>com.terminaltabtailor.activities.StartupActivity</implementation-class>
-    </component>
-  </application-components>
-
   <actions>
     <action
       id="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
@@ -68,7 +62,6 @@
       class="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
       icon="org.jetbrains.plugins.terminal.TerminalIcons.OpenTerminal_13x13"
       text="Open in terminal">
-      <add-to-group group-id="RevealGroup" anchor="last"/>
       <override-text place="RevealInPopup"/>
       <add-to-group group-id="TouchBarDefault_alt" anchor="last"/>
     </action>
