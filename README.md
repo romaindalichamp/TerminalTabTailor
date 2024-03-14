@@ -6,7 +6,7 @@ Simply select a file or folder within your project tree and initiate a terminal 
 
 **Pro-tip**: *Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.*
 
-![img_3.png](img_3.png)
+![img_4.png](img_4.png)
 
 Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
 * Prompt the renaming dialogue each time a new terminal tab is opened.
