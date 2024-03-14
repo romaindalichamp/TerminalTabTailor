@@ -6,7 +6,7 @@ import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
-import com.terminaltabtailor.dto.VirtualSelection
+import com.terminaltabtailor.data.VirtualSelection
 
 class VirtualFilesUtil {
     companion object {
