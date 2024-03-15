@@ -7,9 +7,9 @@
   <change-notes><![CDATA[
     <b>What's New ?</b>
     <br/><br/>
-    <b>Refactor</b>
+    <b>Settings</b>
     <ul>
-      <li><b>Settings:</b> Refactor settings using Kotlin UI DSL Version 2.</li>
+      <li><b>Access:</b> Add Terminal Tab Tailor plugin Settings menu to the drop-down on the right hand side of the terminal tabs.</li>
     </ul>
   ]]></change-notes>
 
@@ -50,7 +50,9 @@
     <applicationService
       serviceImplementation="com.terminaltabtailor.settings.TerminalTabTailorSettingsService"/>
   </extensions>
-
+  <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
+    <openPredefinedTerminalProvider implementation="com.terminaltabtailor.providers.OpenPredefinedTerminalTabTailorActionProvider" />
+  </extensions>
   <actions>
     <action
       id="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
