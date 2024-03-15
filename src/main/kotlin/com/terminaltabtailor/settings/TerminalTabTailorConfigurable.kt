@@ -14,10 +14,10 @@ import com.terminaltabtailor.util.TerminalTabsUtil
 import java.util.*
 
 class TerminalTabTailorConfigurable(private val project: Project) :
-    BoundConfigurable(ResourceBundle.getBundle("Messages").getString("settings.displayName")) {
+    BoundConfigurable(ResourceBundle.getBundle("TerminalTabTailorBundle").getString("settings.displayName")) {
 
     private val settingsService = service<TerminalTabTailorSettingsService>()
-    private val bundle: ResourceBundle = ResourceBundle.getBundle("Messages")
+    private val bundle: ResourceBundle = ResourceBundle.getBundle("TerminalTabTailorBundle")
 
     override fun apply() {
         super.apply()
