@@ -1,4 +1,4 @@
-package com.terminaltabtailor.actions
+package com.terminaltabtailor.action
 
 class ActionId {
     companion object {

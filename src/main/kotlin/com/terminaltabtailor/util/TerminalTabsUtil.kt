@@ -10,8 +10,8 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
-import com.terminaltabtailor.actions.ActionId
-import com.terminaltabtailor.enums.TabNameSort
+import com.terminaltabtailor.action.ActionId
+import com.terminaltabtailor.enum.TabNameSortEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -141,9 +141,9 @@ class TerminalTabsUtil {
 
         fun sortTabs(contentManager: ContentManager, settingsService: TerminalTabTailorSettingsService) {
             when (settingsService.state.selectedTabTypeSort) {
-                TabNameSort.NO_SORT -> return
-                TabNameSort.ASC -> ascSort(contentManager)
-                TabNameSort.DESC_DATE -> descDateSort(
+                TabNameSortEnum.NO_SORT -> return
+                TabNameSortEnum.ASC -> ascSort(contentManager)
+                TabNameSortEnum.DESC_DATE -> descDateSort(
                     contentManager,
                     settingsService.state.dateTemplate
                 )

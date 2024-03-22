@@ -8,8 +8,9 @@ import com.intellij.ui.dsl.builder.bind
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
-import com.terminaltabtailor.enums.TabNameSort
-import com.terminaltabtailor.enums.TabNameType
+import com.terminaltabtailor.enum.TabNameOriginEnum
+import com.terminaltabtailor.enum.TabNameSortEnum
+import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.util.TerminalTabsUtil
 import java.util.*
 
@@ -46,28 +47,77 @@ class TerminalTabTailorConfigurable(private val project: Project) :
 
             group(bundle.getString("settings.sort.label")) {
                 buttonsGroup(title = bundle.getString("settings.sort.title")) {
-                    row { radioButton(bundle.getString("settings.asc.text"), TabNameSort.ASC) }
-                    row { radioButton(bundle.getString("settings.desc_date.text"), TabNameSort.DESC_DATE) }
-                    row { radioButton(bundle.getString("settings.no_sort.text"), TabNameSort.NO_SORT) }
+                    row { radioButton(bundle.getString("settings.asc.text"), TabNameSortEnum.ASC) }
+                    row { radioButton(bundle.getString("settings.desc_date.text"), TabNameSortEnum.DESC_DATE) }
+                    row { radioButton(bundle.getString("settings.no_sort.text"), TabNameSortEnum.NO_SORT) }
                 }.bind(settingsService.state::selectedTabTypeSort)
             }
 
-            group(bundle.getString("settings.name.label")) {
-                buttonsGroup(title = bundle.getString("settings.name.title")) {
-                    row { radioButton(bundle.getString("settings.file_name.text"), TabNameType.FILE_NAME) }
-                    row { radioButton(bundle.getString("settings.first_dir_name.text"), TabNameType.FIRST_DIR_NAME) }
-                    row { radioButton(bundle.getString("settings.module_name.text"), TabNameType.MODULE_NAME) }
-                    row { radioButton(bundle.getString("settings.module_dir_name.text"), TabNameType.MODULE_DIR_NAME) }
-                    row { radioButton(bundle.getString("settings.project_name.text"), TabNameType.PROJECT_NAME) }
-
+            group(bundle.getString("settings.name.type.label")) {
+                buttonsGroup(title = bundle.getString("settings.name.type.title")) {
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.file_name.text"),
+                            TabNameTypeEnum.FILE_NAME
+                        )
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.first_dir_name.text"),
+                            TabNameTypeEnum.FIRST_DIR_NAME
+                        )
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.module_name.text"),
+                            TabNameTypeEnum.MODULE_NAME
+                        )
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.module_dir_name.text"),
+                            TabNameTypeEnum.MODULE_DIR_NAME
+                        )
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.project_name.text"),
+                            TabNameTypeEnum.PROJECT_NAME
+                        )
+                    }
                 }.bind(settingsService.state::selectedTabTypeName)
+            }
+
+            group(bundle.getString("settings.name.origin.label")) {
+                buttonsGroup(title = bundle.getString("settings.name.origin.title")) {
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.origin.project_tree_view.text"),
+                            TabNameOriginEnum.PROJECT_TREE_VIEW
+                        )
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.origin.file_editor_manager.text"),
+                            TabNameOriginEnum.FILE_EDITOR_MANAGER
+                        )
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.origin.mixed.text"),
+                            TabNameOriginEnum.MIXED)
+                    }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.origin.project.text"),
+                            TabNameOriginEnum.PROJECT_NAME)
+                    }
+                }.bind(settingsService.state::selectedTabOrigin)
             }
 
             group(bundle.getString("settings.project.title")) {
                 row {
-                    text(bundle.getString("settings.project.text")).component.also {
-                            it.isEditable = false
-                        }
+                    text(bundle.getString("settings.project.text"))
                 }
             }
         }

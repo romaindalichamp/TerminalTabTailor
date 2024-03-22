@@ -1,12 +1,11 @@
 package com.terminaltabtailor.util
 
-import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
-import com.terminaltabtailor.enums.TabNameSort
+import com.terminaltabtailor.enum.TabNameSortEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettings
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -108,7 +107,7 @@ class TerminalTabsUtilTest {
         `when`(content2.displayName).thenReturn("Alpha")
         `when`(contentManager.contents).thenReturn(arrayOf(content1, content2))
         `when`(settingsService.state).thenReturn(settingsState)
-        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.ASC)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
 
         TerminalTabsUtil.sortTabs(contentManager, settingsService)
 
@@ -142,7 +141,7 @@ class TerminalTabsUtilTest {
         `when`(toolWindow.contentManager).thenReturn(contentManager)
         `when`(contentManager.contents).thenReturn(contents)
         `when`(settingsService.state).thenReturn(settingsState)
-        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.DESC_DATE)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.DESC_DATE)
         `when`(settingsState.dateTemplate).thenReturn("dd-MM-yy")
 
         TerminalTabsUtil.sortTabs(contentManager, settingsService)
@@ -175,7 +174,7 @@ class TerminalTabsUtilTest {
         `when`(toolWindow.contentManager).thenReturn(contentManager)
         `when`(contentManager.contents).thenReturn(contents)
         `when`(settingsService.state).thenReturn(settingsState)
-        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSort.NO_SORT)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.NO_SORT)
         `when`(settingsState.dateTemplate).thenReturn("dd-MM-yy")
 
         TerminalTabsUtil.sortTabs(contentManager, settingsService)

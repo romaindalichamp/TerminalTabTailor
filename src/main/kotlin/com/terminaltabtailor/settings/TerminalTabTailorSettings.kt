@@ -1,13 +1,15 @@
 package com.terminaltabtailor.settings
 
-import com.terminaltabtailor.enums.TabNameSort
-import com.terminaltabtailor.enums.TabNameType
+import com.terminaltabtailor.enum.TabNameOriginEnum
+import com.terminaltabtailor.enum.TabNameSortEnum
+import com.terminaltabtailor.enum.TabNameTypeEnum
 
 class TerminalTabTailorSettings {
     var useCurrentDate: Boolean = true
     var performManualRenaming: Boolean = false
     var alreadyExists: Boolean = false
-    var selectedTabTypeName: TabNameType = TabNameType.FIRST_DIR_NAME
-    var selectedTabTypeSort: TabNameSort = TabNameSort.ASC
+    var selectedTabTypeName: TabNameTypeEnum = TabNameTypeEnum.FIRST_DIR_NAME
+    var selectedTabTypeSort: TabNameSortEnum = TabNameSortEnum.ASC
+    var selectedTabOrigin: TabNameOriginEnum = TabNameOriginEnum.MIXED
     var dateTemplate: String = "dd-MM-yy"
 }

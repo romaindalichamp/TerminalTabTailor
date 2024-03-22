@@ -1,4 +1,4 @@
-package com.terminaltabtailor.actions
+package com.terminaltabtailor.action
 
 import com.intellij.ide.actions.ToolWindowTabRenameActionBase
 import com.intellij.openapi.application.EDT
@@ -38,7 +38,6 @@ class CustomRenameTerminalSessionAction(
     actionId,
     text
 ), DumbAware {
-
     private val settingsService = service<TerminalTabTailorSettingsService>()
 
 
@@ -66,6 +65,8 @@ class CustomRenameTerminalSessionAction(
             }
         }
     }
-}
 
-const val ACTION_ID: String = "CustomRenameTerminalSessionAction"
+    companion object {
+        const val ACTION_ID: String = "CustomRenameTerminalSessionAction"
+    }
+}
