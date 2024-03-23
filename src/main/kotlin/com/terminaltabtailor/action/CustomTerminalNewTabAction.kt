@@ -4,7 +4,6 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
-import com.intellij.openapi.actionSystem.remoting.ActionRemoteBehaviorSpecification
 import com.terminaltabtailor.manager.TerminalTabNamesManager
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager
 import org.jetbrains.plugins.terminal.exp.TerminalPromotedDumbAwareAction
@@ -17,7 +16,7 @@ open class CustomTerminalNewTabAction(
     private val description: String = ResourceBundle.getBundle("TerminalTabTailorBundle")
         .getString("action.customTerminalNewTab.description"),
     private val icon: Icon = AllIcons.General.Add,
-) : TerminalPromotedDumbAwareAction(), ActionRemoteBehaviorSpecification.Frontend {
+) : TerminalPromotedDumbAwareAction() {
 
     init {
         templatePresentation.also {

@@ -29,7 +29,8 @@ class VirtualSelectionUtil {
 
         fun getSelectedFile(e: AnActionEvent, project: Project): VirtualFile? {
             return RevealFileAction.findLocalFile(e.getData(CommonDataKeys.VIRTUAL_FILE))
-                ?: ProjectSpecificLastVirtualFile.getLastVirtualFileForProject(project) ?: e.project?.guessProjectDir()
+                ?: ProjectSpecificLastVirtualFile.getLastVirtualFileForProject(project)
+                ?: e.project?.guessProjectDir()
                 ?: e.project?.workspaceFile
         }
 
