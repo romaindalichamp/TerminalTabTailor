@@ -105,12 +105,14 @@ class TerminalTabTailorConfigurable(private val project: Project) :
                     row {
                         radioButton(
                             bundle.getString("settings.name.origin.mixed.text"),
-                            TabNameOriginEnum.MIXED)
+                            TabNameOriginEnum.MIXED
+                        )
                     }
                     row {
                         radioButton(
                             bundle.getString("settings.name.origin.project.text"),
-                            TabNameOriginEnum.PROJECT_NAME)
+                            TabNameOriginEnum.PROJECT_NAME
+                        )
                     }
                 }.bind(settingsService.state::selectedTabOrigin)
             }

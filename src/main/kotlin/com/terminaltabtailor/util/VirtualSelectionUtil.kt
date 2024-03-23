@@ -12,7 +12,6 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.terminaltabtailor.data.ProjectSpecificLastVirtualFile
 import com.terminaltabtailor.data.VirtualSelection
-import com.terminaltabtailor.enum.TabNameOriginEnum
 
 class VirtualSelectionUtil {
     companion object {
