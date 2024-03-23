@@ -15,6 +15,6 @@ open class CustomTerminalNewTabAction(
     }
 
     companion object {
-        const val ACTION_ID: String = "Terminal.NewTerminalTabTailorTab"
+        const val ACTION_ID: String = "CustomTerminalNewTabAction"
     }
 }
