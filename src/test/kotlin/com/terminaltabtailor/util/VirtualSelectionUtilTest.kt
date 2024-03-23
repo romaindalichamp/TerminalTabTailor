@@ -8,7 +8,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import kotlin.test.assertEquals
 
-class VirtualFilesUtilTest {
+class VirtualSelectionUtilTest {
 
     @Test
     fun testGetModuleDirectoryName() {
@@ -21,7 +21,9 @@ class VirtualFilesUtilTest {
         `when`(moduleRootManager.contentRoots).thenReturn(arrayOf(virtualFile))
         `when`(ModuleRootManager.getInstance(module)).thenReturn(moduleRootManager)
 
-        val result = VirtualFilesUtil.getModuleDirectoryName(module)
+        val result = VirtualSelectionUtil.getModuleDirectoryName(module)
+
         assertEquals("moduleDir", result)
     }
+
 }

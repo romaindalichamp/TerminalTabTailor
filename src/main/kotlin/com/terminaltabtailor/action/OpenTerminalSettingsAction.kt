@@ -1,4 +1,4 @@
-package com.terminaltabtailor.actions
+package com.terminaltabtailor.action
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction

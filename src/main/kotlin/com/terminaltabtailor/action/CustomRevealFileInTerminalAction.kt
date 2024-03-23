@@ -1,21 +1,17 @@
-package com.terminaltabtailor.actions
+package com.terminaltabtailor.action
 
-import com.intellij.ide.actions.RevealFileAction
 import com.intellij.ide.lightEdit.LightEdit
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.util.NlsContexts
-import com.intellij.openapi.vfs.VirtualFile
-import com.terminaltabtailor.managers.TerminalTabNamesManager
-import com.terminaltabtailor.util.TerminalTabsUtil
-import kotlinx.coroutines.*
+import com.terminaltabtailor.manager.TerminalTabNamesManager
+import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
+import com.terminaltabtailor.util.VirtualSelectionUtil
 import org.jetbrains.plugins.terminal.TerminalBundle
-import org.jetbrains.plugins.terminal.TerminalToolWindowManager
 
 /**
  * This file includes software developed by JetBrains ([https://www.jetbrains.com](https://www.jetbrains.com/)) and its contributors
@@ -33,8 +29,9 @@ import org.jetbrains.plugins.terminal.TerminalToolWindowManager
  * This enhanced action can be triggered from any sources where the traditional action is used.
  */
 class CustomRevealFileInTerminalAction(
-    @NlsContexts.Label val text: String = TerminalBundle.message(ActionId.OPEN_IN_TERMINAL_TEXT_ID)
+    @NlsContexts.Label val text: String = TerminalBundle.message(ActionId.OPEN_IN_TERMINAL_TEXT_ID),
 ) : DumbAwareAction() {
+    private val settingsService = service<TerminalTabTailorSettingsService>()
 
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT
@@ -48,43 +45,15 @@ class CustomRevealFileInTerminalAction(
     private fun isAvailable(e: AnActionEvent): Boolean {
         val project = e.project
         val editor = e.getData(CommonDataKeys.EDITOR)
-        return project != null && !LightEdit.owns(project) && getSelectedFile(e) != null &&
+        return project != null && !LightEdit.owns(project) && VirtualSelectionUtil.getSelectedFile(
+            e,
+            project
+        ) != null &&
                 (!ActionPlaces.isPopupPlace(e.place) || editor == null || !editor.selectionModel.hasSelection())
     }
 
-    private fun getSelectedFile(e: AnActionEvent): VirtualFile? {
-        return RevealFileAction.findLocalFile(e.getData(CommonDataKeys.VIRTUAL_FILE))
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
     override fun actionPerformed(e: AnActionEvent) {
-        e.project?.let { project ->
-            getSelectedFile(e)?.let { selectedFile ->
-                TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager?.let { terminalToolWindowContentManger ->
-
-                    ApplicationManager.getApplication().invokeLater {
-                        GlobalScope.launch {
-                            if (!TerminalTabNamesManager.reuseExistingTab(
-                                    project,
-                                    terminalToolWindowContentManger,
-                                    selectedFile
-                                )
-                            ) {
-                                withContext(Dispatchers.EDT) {
-                                    TerminalToolWindowManager.getInstance(project).openTerminalIn(selectedFile)
-                                }
-                                TerminalTabNamesManager.renameNewTab(
-                                    project,
-                                    terminalToolWindowContentManger,
-                                    selectedFile
-                                )
-                            }
-                        }
-                    }
-                }
-
-            }
-
-        }
+        TerminalTabNamesManager.openTabInTerminal(e)
     }
+
 }

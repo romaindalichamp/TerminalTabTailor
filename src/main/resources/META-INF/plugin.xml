@@ -7,9 +7,9 @@
   <change-notes><![CDATA[
     <b>What's New ?</b>
     <br/><br/>
-    <b>Settings</b>
+    <b>Enhancement</b>
     <ul>
-      <li><b>Access:</b> Add Terminal Tab Tailor plugin Settings menu to the drop-down on the right hand side of the terminal tabs.</li>
+      <li><b>Introducing TTT Button : </b> the "Open in terminal" feature with Terminal Tab Tailor settings bundled into a single click, using the last selected file in your tree, in your editor, or mixed. Locate it next to the "+" in the terminal tool window. Customize its behavior to your preference in the settings.</li>
     </ul>
   ]]></change-notes>
 
@@ -21,12 +21,21 @@
     <b>Pro-tip</b>: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action
     <br/><br/>
     Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
+    Introducing TTT Button, the "Open in Terminal" action in one click
     <ul>
+      <li>Use the last selection from the Project Tree.</li>
+      <li>Use the last selected Tab from the File Editor.</li>
+      <li>Use the most recent selection, whether from the Project Tree or the File Editor Manager.</li>
+      <li>Use the project name, always.</li>
+    </ul>
+    Options & Sort
+    <ul>
+      <li>Reuse an existing tab when the names match.</li>
       <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
+      <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
       <li>Maintain tabs in perpetual alphabetical order.</li>
       <li>Maintain tabs sorted by descending date.</li>
       <li>Do not sort tabs.</li>
-      <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
     </ul>
     <br/><br/>
     Choose from a variety of naming conventions to suit your workflow:<br/>
@@ -41,31 +50,49 @@
 
   <depends>com.intellij.modules.platform</depends>
   <depends>org.jetbrains.plugins.terminal</depends>
-
+  <projectListeners>
+    <listener
+      class="com.terminaltabtailor.listener.ProjectFileEditorManagerListener"
+      topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+    <listener
+      class="com.terminaltabtailor.listener.CustomProjectViewListener"
+      topic="com.intellij.ide.projectView.impl.ProjectViewListener"/>
+  </projectListeners>
   <extensions defaultExtensionNs="com.intellij">
-    <postStartupActivity implementation="com.terminaltabtailor.activities.StartupActivity"/>
+    <postStartupActivity implementation="com.terminaltabtailor.activity.StartupActivity"/>
     <projectConfigurable parentId="tools"
       instance="com.terminaltabtailor.settings.TerminalTabTailorConfigurable"
       displayName="Terminal Tab Tailor"/>
     <applicationService
       serviceImplementation="com.terminaltabtailor.settings.TerminalTabTailorSettingsService"/>
+
   </extensions>
   <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
-    <openPredefinedTerminalProvider implementation="com.terminaltabtailor.providers.OpenPredefinedTerminalTabTailorActionProvider" />
+    <openPredefinedTerminalProvider
+      implementation="com.terminaltabtailor.provider.OpenPredefinedTerminalTabTailorActionProvider"/>
   </extensions>
+
   <actions>
     <action
-      id="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
-      class="com.terminaltabtailor.actions.CustomRenameTerminalSessionAction"
+      id="com.terminaltabtailor.action.CustomRenameTerminalSessionAction"
+      class="com.terminaltabtailor.action.CustomRenameTerminalSessionAction"
       text="Rename Session">
       <add-to-group group-id="ToolWindowContextMenu" anchor="first"/>
     </action>
-    <action id="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
-      class="com.terminaltabtailor.actions.CustomRevealFileInTerminalAction"
+    <action id="com.terminaltabtailor.action.CustomRevealFileInTerminalAction"
+      class="com.terminaltabtailor.action.CustomRevealFileInTerminalAction"
       icon="org.jetbrains.plugins.terminal.TerminalIcons.OpenTerminal_13x13"
       text="Open in terminal">
       <override-text place="RevealInPopup"/>
       <add-to-group group-id="TouchBarDefault_alt" anchor="last"/>
+    </action>
+    <action
+      id="com.terminaltabtailor.action.CustomTerminalNewTabAction"
+      class="com.terminaltabtailor.action.CustomTerminalNewTabAction"
+      description="Open using Terminal Tab Tailor"
+      icon="org.jetbrains.plugins.terminal.TerminalIcons.OpenTerminal_13x13"
+      text="Open in Terminal">
+      <add-to-group group-id="TerminalToolwindowActionGroup" anchor="first"/>
     </action>
   </actions>
 </idea-plugin>

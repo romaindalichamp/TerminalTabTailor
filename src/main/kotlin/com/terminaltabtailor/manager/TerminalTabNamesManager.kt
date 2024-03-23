@@ -1,5 +1,7 @@
-package com.terminaltabtailor.managers
+package com.terminaltabtailor.manager
 
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.module.Module
@@ -9,18 +11,48 @@ import com.intellij.openapi.vfs.isFile
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.data.VirtualSelection
-import com.terminaltabtailor.enums.TabNameType
+import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
-import com.terminaltabtailor.util.VirtualFilesUtil
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.terminaltabtailor.util.VirtualSelectionUtil
+import kotlinx.coroutines.*
+import org.jetbrains.plugins.terminal.TerminalToolWindowManager
 import java.text.SimpleDateFormat
 import java.util.*
 
 class TerminalTabNamesManager {
     companion object {
         private val settingsService = service<TerminalTabTailorSettingsService>()
+
+        @OptIn(DelicateCoroutinesApi::class)
+        fun openTabInTerminal(e: AnActionEvent) {
+            e.project?.let { project ->
+                VirtualSelectionUtil.getSelectedFile(e, project)?.let { selectedFile ->
+                    TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager?.let { terminalToolWindowContentManger ->
+
+                        ApplicationManager.getApplication().invokeLater {
+                            GlobalScope.launch {
+                                if (!reuseExistingTab(
+                                        project,
+                                        terminalToolWindowContentManger,
+                                        selectedFile
+                                    )
+                                ) {
+                                    withContext(Dispatchers.EDT) {
+                                        TerminalToolWindowManager.getInstance(project).openTerminalIn(selectedFile)
+                                    }
+                                    renameNewTab(
+                                        project,
+                                        terminalToolWindowContentManger,
+                                        selectedFile
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         suspend fun reuseExistingTab(
             project: Project,
@@ -29,7 +61,7 @@ class TerminalTabNamesManager {
         ): Boolean {
             var tabExists = false
 
-            val virtualSelection: VirtualSelection = VirtualFilesUtil.getVirtualSelection(project, selectedFile)
+            val virtualSelection: VirtualSelection = VirtualSelectionUtil.getVirtualSelection(project, selectedFile)
 
             virtualSelection.lastSelectedVirtualFile?.let {
                 tabExists = findExistingTab(
@@ -52,7 +84,7 @@ class TerminalTabNamesManager {
             selectedFile: VirtualFile
         ) {
 
-            val virtualSelection: VirtualSelection = VirtualFilesUtil.getVirtualSelection(project, selectedFile)
+            val virtualSelection: VirtualSelection = VirtualSelectionUtil.getVirtualSelection(project, selectedFile)
 
             virtualSelection.lastSelectedVirtualFile?.let {
 
@@ -167,16 +199,18 @@ class TerminalTabNamesManager {
             var name = lastSelectedVirtualFile.name
 
             name = when {
-                settingsService.state.selectedTabTypeName == TabNameType.FIRST_DIR_NAME && lastSelectedVirtualFile.isFile -> lastSelectedVirtualFileParent?.name
-                    ?: project.name
+                settingsService.state.selectedTabTypeName == TabNameTypeEnum.FIRST_DIR_NAME && lastSelectedVirtualFile.isFile ->
+                    lastSelectedVirtualFileParent?.name ?: project.name
 
-                settingsService.state.selectedTabTypeName == TabNameType.MODULE_NAME -> lastSelectedVirtualFileParentModule?.name
-                    ?: project.name
+                settingsService.state.selectedTabTypeName == TabNameTypeEnum.MODULE_NAME ->
+                    lastSelectedVirtualFileParentModule?.name ?: project.name
 
-                settingsService.state.selectedTabTypeName == TabNameType.MODULE_DIR_NAME -> lastSelectedVirtualFileParentModuleDirName
-                    ?: lastSelectedVirtualFileParentModule?.name ?: project.name
+                settingsService.state.selectedTabTypeName == TabNameTypeEnum.MODULE_DIR_NAME ->
+                    lastSelectedVirtualFileParentModuleDirName
+                        ?: lastSelectedVirtualFileParentModule?.name
+                        ?: project.name
 
-                settingsService.state.selectedTabTypeName == TabNameType.PROJECT_NAME -> project.name
+                settingsService.state.selectedTabTypeName == TabNameTypeEnum.PROJECT_NAME -> project.name
 
                 else -> name
             }
@@ -188,5 +222,4 @@ class TerminalTabNamesManager {
             return name
         }
     }
-
 }

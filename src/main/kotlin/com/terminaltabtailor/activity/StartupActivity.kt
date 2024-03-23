@@ -1,12 +1,13 @@
-package com.terminaltabtailor.activities
+package com.terminaltabtailor.activity
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-import com.terminaltabtailor.actions.ActionId
-import com.terminaltabtailor.actions.CustomRenameTerminalSessionAction
-import com.terminaltabtailor.actions.CustomRevealFileInTerminalAction
+import com.terminaltabtailor.action.ActionId
+import com.terminaltabtailor.action.CustomRenameTerminalSessionAction
+import com.terminaltabtailor.action.CustomRevealFileInTerminalAction
 import org.jetbrains.plugins.terminal.TerminalBundle
+
 
 class StartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -28,9 +29,10 @@ class StartupActivity : ProjectActivity {
                 actionManager
                     .replaceAction(
                         ActionId.OPEN_IN_TERMINAL_ID,
-                        CustomRevealFileInTerminalAction()
+                        CustomRevealFileInTerminalAction(
+                            TerminalBundle.message(ActionId.OPEN_IN_TERMINAL_TEXT_ID)
+                        )
                     )
             }
-
     }
 }
