@@ -11,6 +11,8 @@
     <ul>
       <li><b>Introducing TTT Button : </b> the "Open in terminal" feature with Terminal Tab Tailor settings bundled into a single click, using the last selected file in your tree, in your editor, or mixed. Locate it next to the "+" in the terminal tool window. Customize its behavior to your preference in the settings.</li>
     </ul>
+    <br/>
+    <b>Pro-tip : </b> Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.
   ]]></change-notes>
 
   <description><![CDATA[
