@@ -38,7 +38,6 @@ class CustomRenameTerminalSessionAction(
     actionId,
     text
 ), DumbAware {
-    private val settingsService = service<TerminalTabTailorSettingsService>()
 
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -58,7 +57,7 @@ class CustomRenameTerminalSessionAction(
         GlobalScope.launch {
             withContext(Dispatchers.EDT) {
                 contentManager?.let {
-                    TerminalTabsUtil.sortTabs(it, settingsService)
+                    TerminalTabsUtil.sortTabs(it, service<TerminalTabTailorSettingsService>())
                     TerminalTabsUtil.selectNewTab(it, newContentName)
                     TerminalTabsUtil.activateTerminalWindow(project)
                 }

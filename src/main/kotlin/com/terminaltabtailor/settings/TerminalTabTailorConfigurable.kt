@@ -17,11 +17,12 @@ import java.util.*
 class TerminalTabTailorConfigurable(private val project: Project) :
     BoundConfigurable(ResourceBundle.getBundle("TerminalTabTailorBundle").getString("settings.displayName")) {
 
-    private val settingsService = service<TerminalTabTailorSettingsService>()
     private val bundle: ResourceBundle = ResourceBundle.getBundle("TerminalTabTailorBundle")
 
     override fun apply() {
         super.apply()
+        val settingsService = service<TerminalTabTailorSettingsService>()
+
         TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager?.let {
             TerminalTabsUtil.sortTabs(it, settingsService)
             TerminalTabsUtil.activateTerminalWindow(project)
@@ -29,6 +30,8 @@ class TerminalTabTailorConfigurable(private val project: Project) :
     }
 
     override fun createPanel(): DialogPanel {
+        val settingsService = service<TerminalTabTailorSettingsService>()
+
         return panel {
             group(bundle.getString("settings.options.title")) {
                 row {
