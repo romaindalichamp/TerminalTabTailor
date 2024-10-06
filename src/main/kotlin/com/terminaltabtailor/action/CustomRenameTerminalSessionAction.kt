@@ -57,7 +57,7 @@ class CustomRenameTerminalSessionAction(
         GlobalScope.launch {
             withContext(Dispatchers.EDT) {
                 contentManager?.let {
-                    TerminalTabsUtil.sortTabs(it, service<TerminalTabTailorSettingsService>())
+                    TerminalTabsUtil.sortTabs(it, settingsService)
                     TerminalTabsUtil.selectNewTab(it, newContentName)
                     TerminalTabsUtil.activateTerminalWindow(project)
                 }
@@ -67,5 +67,9 @@ class CustomRenameTerminalSessionAction(
 
     companion object {
         const val ACTION_ID: String = "CustomRenameTerminalSessionAction"
+
+        private val settingsService by lazy {
+            service<TerminalTabTailorSettingsService>()
+        }
     }
 }

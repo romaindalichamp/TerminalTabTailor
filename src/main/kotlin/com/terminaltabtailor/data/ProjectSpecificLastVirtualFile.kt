@@ -10,12 +10,16 @@ import java.util.*
 
 class ProjectSpecificLastVirtualFile(val project: Project) {
     companion object {
+        private val settingsService by lazy {
+            service<TerminalTabTailorSettingsService>()
+        }
+
         private val lastVirtualFileForProject = WeakHashMap<Project, VirtualFile?>()
         private val lastFEMFileForProject = WeakHashMap<Project, VirtualFile?>()
         private val lastPTVFileForProject = WeakHashMap<Project, VirtualFile?>()
 
         fun getLastVirtualFileForProject(project: Project): VirtualFile? {
-            return when (service<TerminalTabTailorSettingsService>().state.selectedTabOrigin) {
+            return when (settingsService.state.selectedTabOrigin) {
                 TabNameOriginEnum.FILE_EDITOR_MANAGER -> lastFEMFileForProject[project]
                 TabNameOriginEnum.PROJECT_TREE_VIEW -> lastPTVFileForProject[project]
                 TabNameOriginEnum.MIXED -> lastVirtualFileForProject[project]
