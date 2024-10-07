@@ -38,7 +38,6 @@ class CustomRenameTerminalSessionAction(
     actionId,
     text
 ), DumbAware {
-    private val settingsService = service<TerminalTabTailorSettingsService>()
 
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -68,5 +67,9 @@ class CustomRenameTerminalSessionAction(
 
     companion object {
         const val ACTION_ID: String = "CustomRenameTerminalSessionAction"
+
+        private val settingsService by lazy {
+            service<TerminalTabTailorSettingsService>()
+        }
     }
 }

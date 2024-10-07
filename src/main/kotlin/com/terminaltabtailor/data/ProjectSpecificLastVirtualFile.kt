@@ -10,7 +10,10 @@ import java.util.*
 
 class ProjectSpecificLastVirtualFile(val project: Project) {
     companion object {
-        private val settingsService = service<TerminalTabTailorSettingsService>()
+        private val settingsService by lazy {
+            service<TerminalTabTailorSettingsService>()
+        }
+
         private val lastVirtualFileForProject = WeakHashMap<Project, VirtualFile?>()
         private val lastFEMFileForProject = WeakHashMap<Project, VirtualFile?>()
         private val lastPTVFileForProject = WeakHashMap<Project, VirtualFile?>()

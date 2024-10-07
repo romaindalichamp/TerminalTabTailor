@@ -22,7 +22,9 @@ import java.util.*
 
 class TerminalTabNamesManager {
     companion object {
-        private val settingsService = service<TerminalTabTailorSettingsService>()
+        private val settingsService by lazy {
+            service<TerminalTabTailorSettingsService>()
+        }
 
         @OptIn(DelicateCoroutinesApi::class)
         fun openTabInTerminal(e: AnActionEvent) {
@@ -109,6 +111,7 @@ class TerminalTabNamesManager {
             lastSelectedVirtualFileParentModule: Module?,
             lastSelectedVirtualFileParentModuleDirName: String?
         ): Boolean {
+
             val constructedName: String = constructNewTabName(
                 project,
                 lastSelectedVirtualFile,

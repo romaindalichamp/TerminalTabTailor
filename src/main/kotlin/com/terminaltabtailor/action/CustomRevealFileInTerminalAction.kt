@@ -31,7 +31,6 @@ import org.jetbrains.plugins.terminal.TerminalBundle
 class CustomRevealFileInTerminalAction(
     @NlsContexts.Label val text: String = TerminalBundle.message(ActionId.OPEN_IN_TERMINAL_TEXT_ID),
 ) : DumbAwareAction() {
-    private val settingsService = service<TerminalTabTailorSettingsService>()
 
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT
