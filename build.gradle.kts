@@ -12,18 +12,18 @@ repositories {
 }
 
 intellij {
-    version.set("2024.2.0.1")
-    type.set("IU")
+    version.set("2023.3.4")
+    type.set("IC")
     plugins.set(listOf("org.jetbrains.plugins.terminal"))
 }
 
 tasks {
     withType<JavaCompile> {
-        sourceCompatibility = "21"
-        targetCompatibility = "21"
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "21"
+        kotlinOptions.jvmTarget = "17"
     }
 
     patchPluginXml {
