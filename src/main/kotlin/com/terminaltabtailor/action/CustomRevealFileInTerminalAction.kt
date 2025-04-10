@@ -1,15 +1,12 @@
 package com.terminaltabtailor.action
 
 import com.intellij.ide.lightEdit.LightEdit
-import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.util.NlsContexts
 import com.terminaltabtailor.manager.TerminalTabNamesManager
-import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.VirtualSelectionUtil
 import org.jetbrains.plugins.terminal.TerminalBundle
 
@@ -48,7 +45,7 @@ class CustomRevealFileInTerminalAction(
             e,
             project
         ) != null &&
-                (!ActionPlaces.isPopupPlace(e.place) || editor == null || !editor.selectionModel.hasSelection())
+                (!e.isFromContextMenu || editor == null || !editor.selectionModel.hasSelection())
     }
 
     override fun actionPerformed(e: AnActionEvent) {

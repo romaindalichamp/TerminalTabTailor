@@ -91,18 +91,12 @@ class TerminalTabsUtilTest {
 
     @Test
     fun `ascSort should order contents alphabetically`() {
-        val project = mock(Project::class.java)
-        val toolWindowManager = mock(ToolWindowManager::class.java)
-        val toolWindow = mock(ToolWindow::class.java)
         val contentManager = mock(ContentManager::class.java)
         val content1 = mock(Content::class.java)
         val content2 = mock(Content::class.java)
         val settingsState = mock(TerminalTabTailorSettings::class.java)
         val settingsService = mock(TerminalTabTailorSettingsService::class.java)
 
-        `when`(project.getService(ToolWindowManager::class.java)).thenReturn(toolWindowManager)
-        `when`(toolWindowManager.getToolWindow("Terminal")).thenReturn(toolWindow)
-        `when`(toolWindow.contentManager).thenReturn(contentManager)
         `when`(content1.displayName).thenReturn("Zeta")
         `when`(content2.displayName).thenReturn("Alpha")
         `when`(contentManager.contents).thenReturn(arrayOf(content1, content2))
@@ -112,11 +106,9 @@ class TerminalTabsUtilTest {
         TerminalTabsUtil.sortTabs(contentManager, settingsService)
 
         val inOrder = inOrder(contentManager)
-        inOrder.verify(contentManager)
-            .removeContent(eq(content2), eq(false)) // Alpha should come first
+        inOrder.verify(contentManager).removeContent(eq(content2), eq(false)) // Alpha
         inOrder.verify(contentManager).addContent(eq(content2))
-        inOrder.verify(contentManager)
-            .removeContent(eq(content1), eq(false)) // Zeta should come second
+        inOrder.verify(contentManager).removeContent(eq(content1), eq(false)) // Zeta
         inOrder.verify(contentManager).addContent(eq(content1))
     }
 
