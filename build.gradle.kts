@@ -5,29 +5,29 @@ plugins {
 }
 
 group = "com.romaindalichamp"
-version = "1.4.2"
+version = "1.4.3"
 
 repositories {
     mavenCentral()
 }
 
 intellij {
-    version.set("2023.3.4")
+    version.set("2024.3.1")
     type.set("IC")
     plugins.set(listOf("org.jetbrains.plugins.terminal"))
 }
 
 tasks {
     withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+        sourceCompatibility = "21"
+        targetCompatibility = "21"
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions.jvmTarget = "21"
     }
 
     patchPluginXml {
-        sinceBuild.set("231")
+        sinceBuild.set("243")
         untilBuild.set("")
     }
 
@@ -42,8 +42,8 @@ tasks {
     }
 }
 dependencies {
-    val mockitoVersion = "3+"
-    val junitJupiter = "5.7.0"
+    val mockitoVersion = "5.5.0"
+    val junitJupiter = "5.10.0"
     val kotlinTestJunit = "2.0.0-Beta3"
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiter")

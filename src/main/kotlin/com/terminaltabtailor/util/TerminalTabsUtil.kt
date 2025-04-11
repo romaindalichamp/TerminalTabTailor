@@ -1,10 +1,8 @@
 package com.terminaltabtailor.util
 
 import com.intellij.ide.DataManager
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.Presentation
+import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
@@ -95,16 +93,15 @@ class TerminalTabsUtil {
                         .getInstance()
                         .getAction(ActionId.TERMINAL_RENAME_SESSION_ID)
 
-                val actionEvent =
-                    AnActionEvent
-                        .createFromDataContext(
-                            ActionPlaces.UNKNOWN,
-                            Presentation(),
-                            DataManager.getInstance().getDataContext(it.component)
-                        )
+                val actionEvent = AnActionEvent.createEvent(
+                    DataManager.getInstance().getDataContext(it.component),
+                    Presentation(),
+                    ActionPlaces.UNKNOWN,
+                    ActionUiKind.POPUP,
+                    null)
 
                 if (renameAction != null && renameAction.templatePresentation.isEnabledAndVisible) {
-                    renameAction.actionPerformed(actionEvent)
+                    ActionUtil.performActionDumbAwareWithCallbacks(renameAction, actionEvent)
                 }
             }
         }

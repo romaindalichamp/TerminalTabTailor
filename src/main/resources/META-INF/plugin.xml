@@ -9,7 +9,9 @@
     <br/><br/>
     <b>Fix</b>
     <ul>
-      <li><b>Class initialization must not depend on services: </b> Fix error at IDE startup.</li>
+      <li><b>New Java version: </b> Plugin now supports Java 21.</li>
+      <li><b>Fix: </b> Fixed usage of deprecated methods for better compatibility</li>
+      <li><b>Fix: </b> Addressed method usage that violated IntelliJ platform guidelines.</li>
     </ul>
     <br/>
     <b>Pro-tip : </b> Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.
