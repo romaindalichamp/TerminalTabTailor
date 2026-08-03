@@ -12,6 +12,7 @@ import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.data.VirtualSelection
 import com.terminaltabtailor.enum.TabNameTypeEnum
+import com.terminaltabtailor.settings.TerminalTabTailorSettings
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
 import com.terminaltabtailor.util.VirtualSelectionUtil
@@ -166,13 +167,13 @@ class TerminalTabNamesManager {
                 TerminalTabsUtil.getLastOpenedTab(terminalToolWindowContentManger)
                     ?.let { newTerminalTabContent ->
 
-                        val newDisplayName = TerminalTabsUtil.incrementNumberInName(
-                            terminalToolWindowContentManger.contents.toList(), constructedName
-                        )
-                        newTerminalTabContent.displayName = newDisplayName
-                        newTerminalTabContent.tabName = newDisplayName
-
                         withContext(Dispatchers.EDT) {
+                            val newDisplayName = TerminalTabsUtil.incrementNumberInName(
+                                terminalToolWindowContentManger.contents.toList(), constructedName
+                            )
+                            newTerminalTabContent.displayName = newDisplayName
+                            newTerminalTabContent.tabName = newDisplayName
+
                             TerminalTabsUtil.sortTabs(
                                 terminalToolWindowContentManger,
                                 settingsService
@@ -192,34 +193,40 @@ class TerminalTabNamesManager {
             return null
         }
 
-        private fun constructNewTabName(
+        /*
+         * `settings` and `now` are parameters rather than reads of the global service so that the
+         * naming rules can be exercised without a running application. Production callers omit both.
+         */
+        fun constructNewTabName(
             project: Project,
             lastSelectedVirtualFile: VirtualFile,
             lastSelectedVirtualFileParent: VirtualFile?,
             lastSelectedVirtualFileParentModule: Module?,
             lastSelectedVirtualFileParentModuleDirName: String?,
+            settings: TerminalTabTailorSettings = settingsService.state,
+            now: Date = Date(),
         ): String {
             var name = lastSelectedVirtualFile.name
 
             name = when {
-                settingsService.state.selectedTabTypeName == TabNameTypeEnum.FIRST_DIR_NAME && lastSelectedVirtualFile.isFile ->
+                settings.selectedTabTypeName == TabNameTypeEnum.FIRST_DIR_NAME && lastSelectedVirtualFile.isFile ->
                     lastSelectedVirtualFileParent?.name ?: project.name
 
-                settingsService.state.selectedTabTypeName == TabNameTypeEnum.MODULE_NAME ->
+                settings.selectedTabTypeName == TabNameTypeEnum.MODULE_NAME ->
                     lastSelectedVirtualFileParentModule?.name ?: project.name
 
-                settingsService.state.selectedTabTypeName == TabNameTypeEnum.MODULE_DIR_NAME ->
+                settings.selectedTabTypeName == TabNameTypeEnum.MODULE_DIR_NAME ->
                     lastSelectedVirtualFileParentModuleDirName
                         ?: lastSelectedVirtualFileParentModule?.name
                         ?: project.name
 
-                settingsService.state.selectedTabTypeName == TabNameTypeEnum.PROJECT_NAME -> project.name
+                settings.selectedTabTypeName == TabNameTypeEnum.PROJECT_NAME -> project.name
 
                 else -> name
             }
 
-            if (settingsService.state.useCurrentDate) {
-                name += " <${SimpleDateFormat(settingsService.state.dateTemplate).format(Date())}>"
+            if (settings.useCurrentDate) {
+                name += " <${SimpleDateFormat(settings.dateTemplate).format(now)}>"
             }
 
             return name

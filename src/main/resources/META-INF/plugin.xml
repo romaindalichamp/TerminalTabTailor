@@ -24,23 +24,29 @@
     <br/><br/>
     <b>Pro-tip</b>: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action
     <br/><br/>
-    Configurability is at the heart of Terminal Tab Tailor; venture into the settings to tailor its behavior to your needs:
-    Introducing TTT Button, the "Open in Terminal" action in one click
+    <b>Three ways to open a tailored tab</b>
+    <ul>
+      <li><b>Open In &gt; Terminal</b> - Terminal Tab Tailor takes over the IDE's own "Open in Terminal" action, so every place you already open a terminal from produces a tailored tab. There is nothing new to learn.</li>
+      <li><b>The TTT Button</b> - the "Open in Terminal" action in one click, from the terminal toolbar, using your most recent selection.</li>
+      <li><b>Rename Session</b> - right-click any tab to name it yourself. Your sort order is re-applied straight away and the renamed tab stays selected.</li>
+    </ul>
+    Choose what the TTT Button follows:
     <ul>
       <li>Use the last selection from the Project Tree.</li>
       <li>Use the last selected Tab from the File Editor.</li>
       <li>Use the most recent selection, whether from the Project Tree or the File Editor Manager.</li>
       <li>Use the project name, always.</li>
     </ul>
-    Options & Sort
+    Options &amp; Sort
     <ul>
       <li>Reuse an existing tab when the names match.</li>
       <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
-      <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-YY).</li>
+      <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-yy).</li>
       <li>Maintain tabs in perpetual alphabetical order.</li>
       <li>Maintain tabs sorted by descending date.</li>
       <li>Do not sort tabs.</li>
     </ul>
+    Whichever you choose, opening or reusing a tab brings the terminal window to the front and selects that tab.
     <br/><br/>
     Choose from a variety of naming conventions to suit your workflow:<br/>
     <ul>
@@ -50,6 +56,7 @@
       <li>Use the parent module's directory name for a more structured approach.</li>
       <li>Consistently use the project's name for all terminal tabs.</li>
     </ul>
+    Configurability is at the heart of Terminal Tab Tailor. Find the settings in <b>Settings &gt; Tools &gt; Terminal Tab Tailor</b>, or via <b>Terminal Tab Tailor Settings</b> in the dropdown next to + in the Terminal tool window.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>

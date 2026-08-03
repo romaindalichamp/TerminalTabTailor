@@ -31,6 +31,12 @@ tasks {
         untilBuild.set("")
     }
 
+    buildSearchableOptions {
+        // The headless IDE this task boots reports leaked Configurable panels on shutdown
+        // (1200+ SEVERE lines), all of them from the platform and bundled plugins.
+        jvmArgs("-Didea.is.internal=false")
+    }
+
     signPlugin {
         certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
         privateKey.set(System.getenv("PRIVATE_KEY"))
