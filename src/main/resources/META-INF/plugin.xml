@@ -17,6 +17,7 @@
     </ul>
     <b>Fix</b>
     <ul>
+      <li><b>Tab names were overwritten right after being applied: </b> with the reworked terminal, a tab reverted to the terminal's own name as soon as the session finished starting, so the tailored name only appeared briefly. The reworked terminal became the default in 2025.2 and was an opt-in Beta in 2025.1; the classic terminal was never affected. See <a href="https://github.com/romaindalichamp/TerminalTabTailor/issues/33">issue #33</a>.</li>
       <li><b>Unhandled exception in Dispatchers.Default: </b> naming a newly opened terminal tab could raise an IDE error report.</li>
     </ul>
     <br/>
