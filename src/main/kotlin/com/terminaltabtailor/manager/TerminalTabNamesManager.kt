@@ -171,6 +171,16 @@ class TerminalTabNamesManager {
                             val newDisplayName = TerminalTabsUtil.incrementNumberInName(
                                 terminalToolWindowContentManger.contents.toList(), constructedName
                             )
+                            /*
+                             * `userDefinedTitle` is the highest-priority component of TerminalTitle.buildTitle().
+                             * Without it, the terminal recomputes the tab label from the title the shell reports
+                             * once the session finishes starting, overwriting the name set just below.
+                             */
+                            TerminalToolWindowManager
+                                .findWidgetByContent(newTerminalTabContent)
+                                ?.terminalTitle
+                                ?.change { userDefinedTitle = newDisplayName }
+
                             newTerminalTabContent.displayName = newDisplayName
                             newTerminalTabContent.tabName = newDisplayName
 
