@@ -1,5 +1,3 @@
-import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
-
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.10.5"
@@ -7,7 +5,7 @@ plugins {
 }
 
 group = "com.romaindalichamp"
-version = "1.5.1"
+version = "1.6.0"
 
 repositories {
     mavenCentral()
@@ -18,7 +16,9 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        create(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
+        // IntelliJ IDEA Community builds no longer exist from 2025.3: the distribution is unified,
+        // so `intellijIdeaCommunity()` cannot resolve and `intellijIdea()` must be used instead.
+        intellijIdea("2025.3")
         bundledPlugin("org.jetbrains.plugins.terminal")
     }
 
@@ -38,7 +38,7 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "251"
+            sinceBuild = "253"
             // No upper bound, so a new IDE major does not require a release every time.
             untilBuild = provider { null }
         }

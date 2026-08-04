@@ -9,6 +9,7 @@ import com.intellij.openapi.util.NlsContexts
 import com.terminaltabtailor.manager.TerminalTabNamesManager
 import com.terminaltabtailor.util.VirtualSelectionUtil
 import org.jetbrains.plugins.terminal.TerminalBundle
+import org.jetbrains.plugins.terminal.TerminalIcons
 
 /**
  * This file includes software developed by JetBrains ([https://www.jetbrains.com](https://www.jetbrains.com/)) and its contributors
@@ -27,7 +28,18 @@ import org.jetbrains.plugins.terminal.TerminalBundle
  */
 class CustomRevealFileInTerminalAction(
     @NlsContexts.Label val text: String = TerminalBundle.message(ActionId.OPEN_IN_TERMINAL_TEXT_ID),
+    /**
+     * Which engine this entry opens. Neither creation API follows the "Terminal engine" setting:
+     * the older one always builds a classic terminal, the newer one always a reworked terminal.
+     * So rather than guess, the plugin exposes one explicit entry per engine.
+     */
+    private val opensReworkedEngine: Boolean = true,
 ) : DumbAwareAction() {
+
+    init {
+        // replaceAction() drops the icon declared in the platform's plugin.xml, so restore it here.
+        templatePresentation.icon = TerminalIcons.OpenTerminal_13x13
+    }
 
     override fun getActionUpdateThread(): ActionUpdateThread {
         return ActionUpdateThread.BGT
@@ -49,7 +61,7 @@ class CustomRevealFileInTerminalAction(
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        TerminalTabNamesManager.openTabInTerminal(e)
+        TerminalTabNamesManager.openTabInTerminal(e, opensReworkedEngine)
     }
 
 }
