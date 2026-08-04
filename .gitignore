@@ -33,3 +33,6 @@ hs_err_pid*
 replay_pid*
 
 .kotlin
+
+# Working directory of the IntelliJ Platform Gradle Plugin
+.intellijPlatform
