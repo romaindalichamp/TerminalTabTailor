@@ -68,7 +68,7 @@ Configurability is at the heart of Terminal Tab Tailor. There are two ways into 
 
 | Setting | Default |
 | --- | --- |
-| Reuse an existing tab when the names match | Off |
+| Reuse an existing tab when the names match | On |
 | Prompt the renaming dialogue each time a new terminal tab is opened | Off |
 | Incorporate the current date into tab names | On |
 | Date template | `dd-MM-yy` |

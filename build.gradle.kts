@@ -1,7 +1,9 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+
 plugins {
     id("java")
-    id("org.jetbrains.intellij") version "1.17.2"
-    id("org.jetbrains.kotlin.jvm") version "1.9.22"
+    id("org.jetbrains.intellij.platform") version "2.10.5"
+    id("org.jetbrains.kotlin.jvm") version "2.1.0"
 }
 
 group = "com.romaindalichamp"
@@ -9,12 +11,48 @@ version = "1.4.3"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
-intellij {
-    version.set("2024.3.1")
-    type.set("IC")
-    plugins.set(listOf("org.jetbrains.plugins.terminal"))
+dependencies {
+    intellijPlatform {
+        create(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
+        bundledPlugin("org.jetbrains.plugins.terminal")
+    }
+
+    val mockitoVersion = "5.5.0"
+    val junitJupiter = "5.10.0"
+    val kotlinTestJunit = "2.1.0"
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiter")
+    // The IntelliJ test framework initialises its Logger through JUnit 4 classes even when the
+    // tests themselves are Jupiter, so junit4 must stay on the test runtime classpath.
+    testRuntimeOnly("junit:junit:4.13.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiter")
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinTestJunit")
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "251"
+            // No upper bound, so a new IDE major does not require a release every time.
+            untilBuild = provider { null }
+        }
+    }
+
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
 }
 
 tasks {
@@ -23,12 +61,7 @@ tasks {
         targetCompatibility = "21"
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "21"
-    }
-
-    patchPluginXml {
-        sinceBuild.set("243")
-        untilBuild.set("")
+        compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 
     buildSearchableOptions {
@@ -37,27 +70,7 @@ tasks {
         jvmArgs("-Didea.is.internal=false")
     }
 
-    signPlugin {
-        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-        privateKey.set(System.getenv("PRIVATE_KEY"))
-        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
+    test {
+        useJUnitPlatform()
     }
-
-    publishPlugin {
-        token.set(System.getenv("PUBLISH_TOKEN"))
-    }
-}
-dependencies {
-    val mockitoVersion = "5.5.0"
-    val junitJupiter = "5.10.0"
-    val kotlinTestJunit = "2.0.0-Beta3"
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiter")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiter")
-    testImplementation("org.mockito:mockito-core:$mockitoVersion")
-    testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinTestJunit")
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
