@@ -6,7 +6,9 @@ Terminal Tab Tailor significantly enhances the IntelliJ IDEA workflow by dynamic
 
 Select a file or folder within your project tree and initiate a terminal session from that context. The new tab is named after what you selected.
 
-**Pro-tip**: *Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.*
+*Open In* offers two entries — **Terminal (Reworked)** and **Terminal (Classic)** — so you pick the engine on the spot. Both name the tab the same way.
+
+**Ctrl+Shift+X** opens a reworked terminal for the current selection straight away. Rebind it under *Settings > Keymap* if it clashes with your own shortcuts.
 
 ![img_5.png](img_5.png)
 
@@ -14,7 +16,9 @@ Select a file or folder within your project tree and initiate a terminal session
 
 ### Open In > Terminal
 
-Terminal Tab Tailor takes over the IDE's own "Open in Terminal" action. Every place you already open a terminal from — the project tree context menu, the Open In submenu, your own keyboard shortcut — produces a tailored tab. There is nothing new to learn.
+Terminal Tab Tailor takes over the IDE's own "open in terminal" entries, relabelling them **Terminal (Reworked)** and **Terminal (Classic)**. Every place you already open a terminal from — the project tree context menu, the Open In submenu, your keyboard shortcut — produces a tailored tab.
+
+Why two? Neither of the IDE's terminal-creation APIs follows the *Terminal engine* setting: one always builds a classic terminal, the other always a reworked one. Rather than guess for you, the plugin lets you choose.
 
 ### The TTT button
 

@@ -28,16 +28,19 @@ from the environment. There is no CI workflow in the repo — releases are drive
 ## Toolchain
 
 Pinned in `build.gradle.kts`: IntelliJ Platform Gradle Plugin **2.x** (`org.jetbrains.intellij.platform`),
-IC `2025.1`, `sinceBuild` 251, no `untilBuild` (deliberate — avoids re-releasing on every IDE major),
+IDEA `2025.3`, `sinceBuild` 253, no `untilBuild` (deliberate — avoids re-releasing on every IDE major),
 Kotlin 2.1.0, bytecode target 21. Gradle 8.14.5 through the committed wrapper.
 
 Constraints to know before changing any of it:
 
+- **Use `intellijIdea(...)`, not `intellijIdeaCommunity(...)`.** IntelliJ IDEA moved to a single unified
+  distribution in 2025.3; Community builds no longer exist, so the IC coordinates cannot resolve at all
+  (`Could not find idea:ideaIC:2025.3`). This also requires platform plugin 2.10.4 or newer.
 - **Do not go back to `org.jetbrains.intellij` 1.x.** It cannot read 2025.x distribution layouts and fails with
   `IndexOutOfBoundsException` in `Utils.resolveIdeHomeVariable`.
 - Platform plugin 2.10.5 requires **Gradle 8.13+**, and 2.18+ requires Gradle 9. The wrapper is committed so that
   requirement travels with the repo — `.gitignore` deliberately un-ignores `gradle/wrapper/gradle-wrapper.jar`.
-- **Bytecode target must stay at 21 or lower**: 2025.1 bundles JBR 21, so anything higher fails to load with
+- **Bytecode target must stay at 21 or lower**: the IDE runs on JBR 21, so anything higher fails to load with
   `UnsupportedClassVersionError`.
 - `junit:junit:4.13.2` is a **required** `testRuntimeOnly` dependency even though every test is Jupiter — the
   IntelliJ test framework initialises its `Logger` through JUnit 4 classes. Removing it looks harmless and breaks
@@ -63,14 +66,24 @@ listeners (record selection)        actions (entry points)
 ```
 
 - **`TerminalTabNamesManager`** is the only orchestrator: decide reuse-vs-create, build the name
-  (`constructNewTabName`, driven by `TabNameTypeEnum` + optional ` <date>` suffix), then rename/sort/select/focus.
+  (`constructNewTabName`, driven by `TabNameTypeEnum` + optional ` <date>` suffix), then create/sort/select/focus.
+  Tabs are created through `TerminalToolWindowTabsManager.createTabBuilder()`, which is the **only** creation API
+  that honours the engine chosen in Settings > Tools > Terminal — every older API returns a classic terminal
+  whatever the user picked. It is `@ApiStatus.Experimental`, so a platform bump may require adjusting this call.
 - **`TerminalTabsUtil`** holds all `ContentManager` manipulation and all pure logic (name numbering, sorting,
   date extraction). It is the layer that unit tests exercise — keep new logic here, not in the manager or actions.
 - **`ProjectSpecificLastVirtualFile`** keeps three separate `WeakHashMap`s (editor / project-tree / mixed) and
   picks one based on `TabNameOriginEnum`. `PROJECT_NAME` bypasses the maps and returns `project.guessProjectDir()`.
-- **`StartupActivity`** (postStartupActivity) swaps the platform's `Terminal.RenameSession` and
-  `Terminal.OpenInTerminal` actions for the plugin's subclasses via `ActionManager.replaceAction`. This is why the
-  plugin affects the *stock* "Open in Terminal" everywhere, not just its own menu items.
+- **`StartupActivity`** (postStartupActivity) swaps the platform's `Terminal.RenameSession`,
+  `Terminal.OpenInTerminal` and `Terminal.OpenInReworkedTerminal` actions for the plugin's subclasses via
+  `ActionManager.replaceAction`. This is why the plugin affects the *stock* "Open in Terminal" everywhere, not
+  just its own menu items. From 2025.3 the platform registers **one such action per terminal engine**, and the
+  plugin takes over both, relabelling them "Terminal (Reworked)" / "Terminal (Classic)".
+  `replaceAction` also loses the icon declared in the platform's `plugin.xml`, hence the one set in `init`.
+- **Neither creation API follows the "Terminal engine" setting.** `TerminalToolWindowTabsManager` lives in the
+  reworked frontend and always creates a reworked tab; `TerminalToolWindowManager.openTerminalIn` always creates
+  a classic one. That is why the engine is an explicit menu choice rather than something the plugin infers —
+  do not "fix" this by reading `TerminalOptionsProvider`, it changes nothing about what gets created.
 - **Settings** are an application-level `PersistentStateComponent` (`TerminalTabTailorSettingsService` →
   `TerminalTabTailorSettings.xml`), rendered by `TerminalTabTailorConfigurable` with the Kotlin UI DSL. All user-facing
   strings live in `src/main/resources/TerminalTabTailorBundle.properties`.

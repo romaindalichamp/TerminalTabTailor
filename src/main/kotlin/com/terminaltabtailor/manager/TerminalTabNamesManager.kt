@@ -8,6 +8,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.isFile
+import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.data.VirtualSelection
@@ -28,7 +29,7 @@ class TerminalTabNamesManager {
         }
 
         @OptIn(DelicateCoroutinesApi::class)
-        fun openTabInTerminal(e: AnActionEvent) {
+        fun openTabInTerminal(e: AnActionEvent, openReworkedEngine: Boolean = true) {
             e.project?.let { project ->
                 VirtualSelectionUtil.getSelectedFile(e, project)?.let { selectedFile ->
                     TerminalTabsUtil.getTerminalToolWindow(project)?.contentManager?.let { terminalToolWindowContentManger ->
@@ -41,13 +42,11 @@ class TerminalTabNamesManager {
                                         selectedFile
                                     )
                                 ) {
-                                    withContext(Dispatchers.EDT) {
-                                        TerminalToolWindowManager.getInstance(project).openTerminalIn(selectedFile)
-                                    }
-                                    renameNewTab(
+                                    createNamedTab(
                                         project,
                                         terminalToolWindowContentManger,
-                                        selectedFile
+                                        selectedFile,
+                                        openReworkedEngine
                                     )
                                 }
                             }
@@ -81,23 +80,25 @@ class TerminalTabNamesManager {
             return tabExists
         }
 
-        suspend fun renameNewTab(
+        suspend fun createNamedTab(
             project: Project,
             terminalToolWindowContentManger: ContentManager,
-            selectedFile: VirtualFile
+            selectedFile: VirtualFile,
+            openReworkedEngine: Boolean = true
         ) {
 
             val virtualSelection: VirtualSelection = VirtualSelectionUtil.getVirtualSelection(project, selectedFile)
 
             virtualSelection.lastSelectedVirtualFile?.let {
 
-                renameNewTab(
+                createNamedTab(
                     terminalToolWindowContentManger,
                     project,
                     virtualSelection.lastSelectedVirtualFile!!,
                     virtualSelection.lastSelectedVirtualFileParent,
                     virtualSelection.lastSelectedVirtualFileParentModule,
-                    virtualSelection.lastSelectedVirtualFileParentModuleDirName
+                    virtualSelection.lastSelectedVirtualFileParentModuleDirName,
+                    openReworkedEngine
                 )
             }
 
@@ -142,13 +143,14 @@ class TerminalTabNamesManager {
             return false
         }
 
-        private suspend fun renameNewTab(
+        private suspend fun createNamedTab(
             terminalToolWindowContentManger: ContentManager,
             project: Project,
             lastSelectedVirtualFile: VirtualFile,
             lastSelectedVirtualFileParent: VirtualFile?,
             lastSelectedVirtualFileParentModule: Module?,
-            lastSelectedVirtualFileParentModuleDirName: String?
+            lastSelectedVirtualFileParentModuleDirName: String?,
+            openReworkedEngine: Boolean
         ): Content? {
 
             val constructedName: String = constructNewTabName(
@@ -163,45 +165,75 @@ class TerminalTabNamesManager {
                 terminalToolWindowContentManger.contents.toList(), constructedName
             )
 
-            if (!(settingsService.state.alreadyExists && terminalExists != null)) {
-                TerminalTabsUtil.getLastOpenedTab(terminalToolWindowContentManger)
-                    ?.let { newTerminalTabContent ->
-
-                        withContext(Dispatchers.EDT) {
-                            val newDisplayName = TerminalTabsUtil.incrementNumberInName(
-                                terminalToolWindowContentManger.contents.toList(), constructedName
-                            )
-                            /*
-                             * `userDefinedTitle` is the highest-priority component of TerminalTitle.buildTitle().
-                             * Without it, the terminal recomputes the tab label from the title the shell reports
-                             * once the session finishes starting, overwriting the name set just below.
-                             */
-                            TerminalToolWindowManager
-                                .findWidgetByContent(newTerminalTabContent)
-                                ?.terminalTitle
-                                ?.change { userDefinedTitle = newDisplayName }
-
-                            newTerminalTabContent.displayName = newDisplayName
-                            newTerminalTabContent.tabName = newDisplayName
-
-                            TerminalTabsUtil.sortTabs(
-                                terminalToolWindowContentManger,
-                                settingsService
-                            )
-                            TerminalTabsUtil.selectNewTab(
-                                terminalToolWindowContentManger, newTerminalTabContent.displayName
-                            )
-                            TerminalTabsUtil.activateTerminalWindow(project)
-
-                            if (settingsService.state.performManualRenaming) {
-                                TerminalTabsUtil.performManualRenamingAction(newTerminalTabContent)
-                            }
-                        }
-                        return newTerminalTabContent
-                    }
+            if (settingsService.state.alreadyExists && terminalExists != null) {
+                return null
             }
-            return null
+
+            val workingDirectory = workingDirectoryOf(lastSelectedVirtualFile)
+
+            return withContext(Dispatchers.EDT) {
+                val newDisplayName = TerminalTabsUtil.incrementNumberInName(
+                    terminalToolWindowContentManger.contents.toList(), constructedName
+                )
+
+                /*
+                 * Neither API follows the "Terminal engine" setting: TerminalToolWindowTabsManager
+                 * belongs to the reworked frontend and always builds a reworked tab, while
+                 * openTerminalIn always builds a classic one. The caller picks, through a dedicated
+                 * menu entry per engine.
+                 *
+                 * The reworked builder also names the tab up front, which avoids the classic path's
+                 * "create, then guess which tab was just opened, then rename it" dance.
+                 */
+                val newTerminalTabContent = if (openReworkedEngine) {
+                    TerminalToolWindowTabsManager.getInstance(project)
+                        .createTabBuilder()
+                        .workingDirectory(workingDirectory)
+                        .tabName(newDisplayName)
+                        .requestFocus(true)
+                        .createTab()
+                        .content
+                } else {
+                    TerminalToolWindowManager.getInstance(project).openTerminalIn(lastSelectedVirtualFile)
+                    TerminalTabsUtil.getLastOpenedTab(terminalToolWindowContentManger)
+                } ?: return@withContext null
+
+                /*
+                 * Safety net: `userDefinedTitle` is the highest-priority component of
+                 * TerminalTitle.buildTitle(), so the terminal cannot replace the name once the shell
+                 * reports its own title. Null-safe, as a reworked tab may expose no classic widget.
+                 */
+                TerminalToolWindowManager
+                    .findWidgetByContent(newTerminalTabContent)
+                    ?.terminalTitle
+                    ?.change { userDefinedTitle = newDisplayName }
+
+                newTerminalTabContent.displayName = newDisplayName
+                newTerminalTabContent.tabName = newDisplayName
+
+                TerminalTabsUtil.sortTabs(
+                    terminalToolWindowContentManger,
+                    settingsService
+                )
+                TerminalTabsUtil.selectNewTab(
+                    terminalToolWindowContentManger, newDisplayName
+                )
+                TerminalTabsUtil.activateTerminalWindow(project)
+
+                if (settingsService.state.performManualRenaming) {
+                    TerminalTabsUtil.performManualRenamingAction(newTerminalTabContent)
+                }
+
+                newTerminalTabContent
+            }
         }
+
+        /*
+         * The tab builder takes a path, whereas the previous openTerminalIn() resolved the directory
+         * from the VirtualFile itself.
+         */
+        private fun workingDirectoryOf(selected: VirtualFile): String? =
+            if (selected.isDirectory) selected.path else selected.parent?.path
 
         /*
          * `settings` and `now` are parameters rather than reads of the global service so that the

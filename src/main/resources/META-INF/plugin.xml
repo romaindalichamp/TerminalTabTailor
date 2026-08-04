@@ -9,19 +9,13 @@
     <br/><br/>
     <b>Requirement</b>
     <ul>
-      <li><b>IntelliJ IDEA 2025.1 or later: </b> this release drops support for 2024.x. If you are still on 2024.x, version 1.4.3 remains available and keeps working.</li>
+      <li><b>IntelliJ IDEA 2025.3 or later: </b> the API that lets a plugin open the terminal engine you selected only exists from 2025.3. If you are on an earlier version, 1.5.1 remains available and keeps working.</li>
     </ul>
     <b>Changed</b>
     <ul>
-      <li><b>Reusing a tab is now the default: </b> opening a terminal for something that already has a matching tab brings that tab back up instead of adding a duplicate. If you preferred the previous behaviour, untick "Reuse an existing tab when the names match" in Settings &gt; Tools &gt; Terminal Tab Tailor.</li>
+      <li><b>Choose your terminal engine when opening a tab: </b> "Open In" now offers <b>Terminal (Reworked)</b> and <b>Terminal (Classic)</b>, both tailoring the tab name as usual. Until now the plugin could only ever open a classic terminal.</li>
+      <li><b>A default shortcut: </b> Ctrl+Shift+X opens a reworked terminal for the current selection out of the box. You can change it under Settings &gt; Keymap.</li>
     </ul>
-    <b>Fix</b>
-    <ul>
-      <li><b>Tab names were overwritten right after being applied: </b> with the reworked terminal, a tab reverted to the terminal's own name as soon as the session finished starting, so the tailored name only appeared briefly. The reworked terminal became the default in 2025.2 and was an opt-in Beta in 2025.1; the classic terminal was never affected. See <a href="https://github.com/romaindalichamp/TerminalTabTailor/issues/33">issue #33</a>.</li>
-      <li><b>Unhandled exception in Dispatchers.Default: </b> naming a newly opened terminal tab could raise an IDE error report.</li>
-    </ul>
-    <br/>
-    <b>Pro-tip : </b> Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.
   ]]></change-notes>
 
   <description><![CDATA[
@@ -29,11 +23,11 @@
     <br/><br/>
     Simply select a file or folder within your project tree and initiate a terminal session from that context.
     <br/><br/>
-    <b>Pro-tip</b>: Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action
+    <b>Pro-tip</b>: Ctrl+Shift+X opens a terminal for the current selection right away. Rebind it under Settings &gt; Keymap if it clashes with your own shortcuts.
     <br/><br/>
     <b>Three ways to open a tailored tab</b>
     <ul>
-      <li><b>Open In &gt; Terminal</b> - Terminal Tab Tailor takes over the IDE's own "Open in Terminal" action, so every place you already open a terminal from produces a tailored tab. There is nothing new to learn.</li>
+      <li><b>Open In &gt; Terminal</b> - Terminal Tab Tailor takes over the IDE's own "open in terminal" entries, offering <b>Terminal (Reworked)</b> and <b>Terminal (Classic)</b> so you pick the engine on the spot. Every place you already open a terminal from produces a tailored tab.</li>
       <li><b>The TTT Button</b> - the "Open in Terminal" action in one click, from the terminal toolbar, using your most recent selection.</li>
       <li><b>Rename Session</b> - right-click any tab to name it yourself. Your sort order is re-applied straight away and the renamed tab stays selected.</li>
     </ul>
@@ -103,6 +97,12 @@
       text="Open in terminal">
       <override-text place="RevealInPopup"/>
       <add-to-group group-id="TouchBarDefault_alt" anchor="last"/>
+      <!--
+        Letter-based on purpose: the back quote is a dead key on several layouts, so a plain
+        BACK_QUOTE keystroke never reaches the IDE. Ctrl+Shift+X is free in the default keymap
+        (Ctrl+Alt+T, the obvious mnemonic, is taken by UsageGrouping.UsageType).
+      -->
+      <keyboard-shortcut keymap="$default" first-keystroke="control shift X"/>
     </action>
     <action
       id="com.terminaltabtailor.action.CustomTerminalNewTabAction"
