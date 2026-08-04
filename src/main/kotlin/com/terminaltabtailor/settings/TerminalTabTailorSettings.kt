@@ -7,7 +7,7 @@ import com.terminaltabtailor.enum.TabNameTypeEnum
 class TerminalTabTailorSettings {
     var useCurrentDate: Boolean = true
     var performManualRenaming: Boolean = false
-    var alreadyExists: Boolean = false
+    var alreadyExists: Boolean = true
     var selectedTabTypeName: TabNameTypeEnum = TabNameTypeEnum.FIRST_DIR_NAME
     var selectedTabTypeSort: TabNameSortEnum = TabNameSortEnum.ASC
     var selectedTabOrigin: TabNameOriginEnum = TabNameOriginEnum.MIXED

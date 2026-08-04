@@ -90,6 +90,101 @@ class TerminalTabsUtilTest {
 
 
     @Test
+    fun `getNextAvailableTabName treats a dated tab as occupying the undated name`() {
+        val existingTabs = listOf(createMockContent("main <03-04-24>"))
+
+        val result = TerminalTabsUtil.incrementNumberInName(existingTabs, "main")
+
+        assertEquals(
+            "main (2)", result,
+            "Names are matched by prefix, so turning the date option off collides with dated tabs"
+        )
+    }
+
+    @Test
+    fun `getNextAvailableTabName treats a longer name sharing the prefix as a collision`() {
+        val existingTabs = listOf(createMockContent("srcx"))
+
+        val result = TerminalTabsUtil.incrementNumberInName(existingTabs, "src")
+
+        assertEquals(
+            "src (2)", result,
+            "Prefix matching is not bounded to a word, so 'srcx' counts against 'src'"
+        )
+    }
+
+    @Test
+    fun `alreadyExistingTerminalTab finds the tab whose name matches`() {
+        val wanted = createMockContent("controllers <03-04-24>")
+        val tabs = listOf(createMockContent("resources <03-04-24>"), wanted)
+
+        val result = TerminalTabsUtil.alreadyExistingTerminalTab(tabs, "controllers <03-04-24>")
+
+        assertEquals(wanted, result)
+    }
+
+    @Test
+    fun `alreadyExistingTerminalTab returns null when nothing matches`() {
+        val tabs = listOf(createMockContent("resources <03-04-24>"))
+
+        val result = TerminalTabsUtil.alreadyExistingTerminalTab(tabs, "controllers <03-04-24>")
+
+        assertNull(result, "A new tab must be opened when no name matches")
+    }
+
+    @Test
+    fun `alreadyExistingTerminalTab requires an exact name, not a prefix`() {
+        val tabs = listOf(createMockContent("controllers <03-04-24> (2)"))
+
+        val result = TerminalTabsUtil.alreadyExistingTerminalTab(tabs, "controllers <03-04-24>")
+
+        assertNull(result, "Reuse matches the whole name, unlike the numbering helper")
+    }
+
+    @Test
+    fun `selectNewTab selects the tab carrying the given name`() {
+        val contentManager = mock(ContentManager::class.java)
+        val wanted = createMockContent("controllers")
+        val other = createMockContent("resources")
+
+        `when`(contentManager.contents).thenReturn(arrayOf(other, wanted))
+
+        TerminalTabsUtil.selectNewTab(contentManager, "controllers")
+
+        verify(contentManager).setSelectedContent(wanted)
+        verify(contentManager, never()).setSelectedContent(other)
+    }
+
+    @Test
+    fun `selectNewTab selects nothing when no tab matches`() {
+        val contentManager = mock(ContentManager::class.java)
+        // Built before the stubbing below: createMockContent stubs its own mock, and nesting that
+        // inside thenReturn() leaves the outer stubbing unfinished.
+        val contents = arrayOf(createMockContent("resources"))
+
+        `when`(contentManager.contents).thenReturn(contents)
+
+        TerminalTabsUtil.selectNewTab(contentManager, "controllers")
+
+        verify(contentManager, never()).setSelectedContent(any())
+    }
+
+    @Test
+    fun `selectNewTab leaves the last duplicate selected`() {
+        val contentManager = mock(ContentManager::class.java)
+        val first = createMockContent("controllers")
+        val second = createMockContent("controllers")
+
+        `when`(contentManager.contents).thenReturn(arrayOf(first, second))
+
+        TerminalTabsUtil.selectNewTab(contentManager, "controllers")
+
+        val inOrder = inOrder(contentManager)
+        inOrder.verify(contentManager).setSelectedContent(first)
+        inOrder.verify(contentManager).setSelectedContent(second)
+    }
+
+    @Test
     fun `ascSort should order contents alphabetically`() {
         val contentManager = mock(ContentManager::class.java)
         val content1 = mock(Content::class.java)

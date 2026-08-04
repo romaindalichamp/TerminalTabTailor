@@ -13,10 +13,14 @@
 .idea
 build
 .run
-gradle
+
+# Build output of the IntelliJ Platform Gradle Plugin 2.x
+.intellijPlatform
 
 # Package Files #
 *.jar
+# ...except the Gradle wrapper, which must be committed for ./gradlew to work on a fresh clone
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.nar
 *.ear

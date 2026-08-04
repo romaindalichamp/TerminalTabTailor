@@ -18,8 +18,16 @@ class ProjectSpecificLastVirtualFile(val project: Project) {
         private val lastFEMFileForProject = WeakHashMap<Project, VirtualFile?>()
         private val lastPTVFileForProject = WeakHashMap<Project, VirtualFile?>()
 
-        fun getLastVirtualFileForProject(project: Project): VirtualFile? {
-            return when (settingsService.state.selectedTabOrigin) {
+        /*
+         * `origin` is a parameter rather than a read of the global service so that the routing
+         * between the per-origin maps can be exercised without a running application.
+         * Production callers omit it.
+         */
+        fun getLastVirtualFileForProject(
+            project: Project,
+            origin: TabNameOriginEnum = settingsService.state.selectedTabOrigin
+        ): VirtualFile? {
+            return when (origin) {
                 TabNameOriginEnum.FILE_EDITOR_MANAGER -> lastFEMFileForProject[project]
                 TabNameOriginEnum.PROJECT_TREE_VIEW -> lastPTVFileForProject[project]
                 TabNameOriginEnum.MIXED -> lastVirtualFileForProject[project]
