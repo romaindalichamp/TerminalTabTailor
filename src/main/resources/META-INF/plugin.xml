@@ -7,11 +7,17 @@
   <change-notes><![CDATA[
     <b>What's New ?</b>
     <br/><br/>
+    <b>Requirement</b>
+    <ul>
+      <li><b>IntelliJ IDEA 2025.1 or later: </b> this release drops support for 2024.x. If you are still on 2024.x, version 1.4.3 remains available and keeps working.</li>
+    </ul>
+    <b>Changed</b>
+    <ul>
+      <li><b>Reusing a tab is now the default: </b> opening a terminal for something that already has a matching tab brings that tab back up instead of adding a duplicate. If you preferred the previous behaviour, untick "Reuse an existing tab when the names match" in Settings &gt; Tools &gt; Terminal Tab Tailor.</li>
+    </ul>
     <b>Fix</b>
     <ul>
-      <li><b>New Java version: </b> Plugin now supports Java 21.</li>
-      <li><b>Fix: </b> Fixed usage of deprecated methods for better compatibility</li>
-      <li><b>Fix: </b> Addressed method usage that violated IntelliJ platform guidelines.</li>
+      <li><b>Unhandled exception in Dispatchers.Default: </b> naming a newly opened terminal tab could raise an IDE error report.</li>
     </ul>
     <br/>
     <b>Pro-tip : </b> Enhance your efficiency by assigning a shortcut to the "Open In > Terminal" action.
