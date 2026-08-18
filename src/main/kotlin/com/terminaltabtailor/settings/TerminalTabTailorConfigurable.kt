@@ -50,6 +50,9 @@ class TerminalTabTailorConfigurable(private val project: Project) :
                 row {
                     checkBox(bundle.getString("settings.useCurrentDate.text")).bindSelected(settingsService.state::useCurrentDate)
                 }
+                row(bundle.getString("settings.dateTemplate.text")) {
+                    textField().bindText(settingsService.state::dateTemplate)
+                }
                 row {
                     checkBox(bundle.getString("settings.followCurrentDirectory.text"))
                         .bindSelected(settingsService.state::followCurrentDirectory)
@@ -60,9 +63,6 @@ class TerminalTabTailorConfigurable(private val project: Project) :
                         .bindIntText(settingsService.state::currentDirectoryParents)
                         .gap(RightGap.SMALL)
                     comment(bundle.getString("settings.currentDirectoryParents.example"))
-                }
-                row(bundle.getString("settings.dateTemplate.text")) {
-                    textField().bindText(settingsService.state::dateTemplate)
                 }
             }
 
