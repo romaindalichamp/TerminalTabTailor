@@ -4,21 +4,100 @@ import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.action.ActionId
 import com.terminaltabtailor.enum.TabNameSortEnum
+import com.terminaltabtailor.settings.TerminalTabTailorSettings
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
+import java.awt.KeyboardFocusManager
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import javax.swing.SwingUtilities
 
 
 class TerminalTabsUtil {
     companion object {
         private val numberRegex = "\\(\\d+\\)".toRegex()
+
+        /*
+         * The literal `name <date>` shape the DESC_DATE sorter parses back out through
+         * extractDateUsingSubstring — changing the delimiters here breaks that sort.
+         */
+        fun appendDate(
+            name: String,
+            settings: TerminalTabTailorSettings,
+            now: Date = Date(),
+        ): String =
+            if (settings.useCurrentDate) {
+                "$name <${SimpleDateFormat(settings.dateTemplate).format(now)}>"
+            } else {
+                name
+            }
+
+        /**
+         * The only Windows shells whose working directory can be read as it changes. Everything else
+         * either hides its shell behind a launcher (WSL, ssh, docker) or keeps an emulated directory
+         * the Win32 process never learns about (Git Bash, MSYS, Cygwin) — and IntelliJ injects no
+         * shell integration for them either, so there is nothing left to read.
+         */
+        private val FOLLOWABLE_WINDOWS_SHELLS = setOf("powershell", "pwsh", "cmd")
+
+        /** On a Unix host the shell is the process itself, and `/proc/<pid>/cwd` follows every `cd`. */
+        private val FOLLOWABLE_UNIX_SHELLS = setOf("bash", "sh", "zsh", "fish", "dash", "ksh")
+
+        /*
+         * Whether a tab's shell reports a working directory that actually follows it. Naming a tab
+         * after anything else would show a folder the shell left long ago, so such a tab is left with
+         * the name it was opened under.
+         */
+        fun canFollowWorkingDirectory(
+            shellCommand: List<String>?,
+            isWindows: Boolean = SystemInfo.isWindows,
+        ): Boolean {
+            // Lowercased because Windows spells the very same shell cmd.exe or CMD.EXE, and both
+            // removeSuffix and set lookups are case sensitive.
+            val name = shellCommand
+                ?.firstOrNull()
+                ?.lowercase(Locale.getDefault())
+                ?.substringAfterLast('\\')
+                ?.substringAfterLast('/')
+                ?.removeSuffix(".exe")
+                ?: return false
+
+            return name in if (isWindows) FOLLOWABLE_WINDOWS_SHELLS else FOLLOWABLE_UNIX_SHELLS
+        }
+
+        /*
+         * The last `parents + 1` segments of a shell working directory, joined by '/' — so 0 names a
+         * tab after the folder alone and 2 after `grandparent/parent/child`. A path with fewer
+         * segments than asked for simply yields all it has.
+         *
+         * The separator is whatever the shell reports, not necessarily the one of the IDE's host OS
+         * (a WSL or Docker terminal on Windows reports '/'), so both are split on rather than going
+         * through java.nio.file.Path. The result always joins with '/', which reads as a path on
+         * every platform and keeps tab names stable whatever the shell.
+         */
+        fun directoryNameOf(currentDirectory: String, parents: Int = 0): String? {
+            if (currentDirectory.isBlank()) return null
+
+            val trimmed = currentDirectory.trim().trimEnd('/', '\\')
+            // The path was the filesystem root itself, whose only content is the separator.
+            if (trimmed.isEmpty()) return "/"
+
+            val segments = trimmed.split('/', '\\').filter { it.isNotEmpty() }
+            // A Windows drive root ("C:\") leaves no segment behind; keep the drive letter.
+            if (segments.isEmpty()) return trimmed
+
+            return segments
+                .takeLast(parents.coerceAtLeast(0) + 1)
+                .joinToString("/")
+        }
 
         fun getLastOpenedTab(terminals: ContentManager): Content? {
             return if (terminals.contentCount > 0) {
@@ -48,18 +127,33 @@ class TerminalTabsUtil {
         }
 
         private fun ascSort(manager: ContentManager) {
-            manager
-                .contents
-                .sortedBy { it.displayName.lowercase(Locale.getDefault()) }
-                .forEach { content ->
-                    manager.removeContent(content, false)
-                    manager.addContent(content)
-                }
+            applyOrder(
+                manager,
+                manager.contents.sortedBy { it.displayName.lowercase(Locale.getDefault()) }
+            )
+        }
 
+        /*
+         * Reordering is a remove-then-re-add of every tab, which walks the ContentManager down to zero
+         * contents when there is only one tab — and the terminal tool window collapses the moment its
+         * last content goes. Callers that follow a sort with activateTerminalWindow never noticed;
+         * a tab renaming itself after the shell's working directory does not want to reopen anything.
+         *
+         * Skipping the no-op case also spares the strip a full rebuild whenever a rename leaves the
+         * order untouched.
+         */
+        private fun applyOrder(manager: ContentManager, sortedContents: List<Content>) {
+            if (sortedContents == manager.contents.toList()) return
+
+            sortedContents.forEach { content ->
+                manager.removeContent(content, false)
+                manager.addContent(content)
+            }
         }
 
         private fun descDateSort(tabs: ContentManager, dateFormatter: String) {
-            tabs.let {
+            applyOrder(
+                tabs,
                 tabs.contents.sortedWith { previous, next ->
                     val previousDisplayName = previous.displayName.lowercase(Locale.getDefault())
                     val nextDisplayName = next.displayName.lowercase(Locale.getDefault())
@@ -79,11 +173,8 @@ class TerminalTabsUtil {
                         previousDate == null && nextDate != null -> 1
                         else -> previousDisplayName.compareTo(nextDisplayName)
                     }
-                }.forEach { content ->
-                    tabs.removeContent(content, false)
-                    tabs.addContent(content)
                 }
-            }
+            )
         }
 
         fun performManualRenamingAction(terminalContent: Content) {
@@ -136,15 +227,63 @@ class TerminalTabsUtil {
             }
         }
 
-        fun sortTabs(contentManager: ContentManager, settingsService: TerminalTabTailorSettingsService) {
+        /*
+         * `isFocused` is a parameter rather than a direct read of the keyboard focus so that the
+         * selection rules can be exercised without a running IDE. Production callers omit it.
+         */
+        fun sortTabs(
+            contentManager: ContentManager,
+            settingsService: TerminalTabTailorSettingsService,
+            isFocused: (Content) -> Boolean = ::holdsKeyboardFocus,
+        ) {
             when (settingsService.state.selectedTabTypeSort) {
+                // Returns before touching the manager at all, so nothing is selected either.
                 TabNameSortEnum.NO_SORT -> return
-                TabNameSortEnum.ASC -> ascSort(contentManager)
-                TabNameSortEnum.DESC_DATE -> descDateSort(
-                    contentManager,
-                    settingsService.state.dateTemplate
-                )
+
+                TabNameSortEnum.ASC -> keepingSelection(contentManager, isFocused) {
+                    ascSort(contentManager)
+                }
+
+                TabNameSortEnum.DESC_DATE -> keepingSelection(contentManager, isFocused) {
+                    descDateSort(contentManager, settingsService.state.dateTemplate)
+                }
             }
+        }
+
+        /*
+         * Sorting removes and re-adds every Content, and removing the selected one makes the
+         * ContentManager fall back to a neighbour — so a sort silently moves the user somewhere else.
+         * That matters most when the sort was not asked for: a tab renaming itself after the shell's
+         * working directory re-sorts the strip under a user who is typing in it.
+         *
+         * Re-selecting is not enough on its own: the same cycle takes keyboard focus out of the
+         * terminal, and setSelectedContent leaves it out unless asked, which forces the user to click
+         * back into the command line to carry on typing. Focus is therefore asked back — but only
+         * when the terminal held it to begin with, so a rename happening while the user types in the
+         * editor never yanks them into the terminal.
+         *
+         * Callers that do want a *different* tab selected — opening, reusing, renaming — say so with
+         * selectNewTab right after, which overrides this.
+         */
+        private fun keepingSelection(
+            contentManager: ContentManager,
+            isFocused: (Content) -> Boolean,
+            sort: () -> Unit,
+        ) {
+            val selectedContent = contentManager.selectedContent
+            val hadFocus = selectedContent != null && isFocused(selectedContent)
+
+            sort()
+
+            selectedContent?.let { contentManager.setSelectedContent(it, hadFocus) }
+        }
+
+        private fun holdsKeyboardFocus(content: Content): Boolean {
+            val focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
+                ?: return false
+            val component = content.component ?: return false
+
+            return SwingUtilities.isDescendingFrom(focusOwner, component)
         }
 
         fun alreadyExistingTerminalTab(

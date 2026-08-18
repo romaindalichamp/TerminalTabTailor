@@ -53,6 +53,57 @@ Optionally the current date is appended in angle brackets, so a tab reads `main 
 
 ![img.png](img.png)
 
+### Adding parent folders
+
+`src` alone tells you little when every module has one. **Parent folders to include** prepends as many levels
+as you ask for:
+
+| Setting | A tab in `~/workspace/TerminalTabTailor/src` reads |
+| --- | --- |
+| `0` | `src` |
+| `1` (default) | `TerminalTabTailor/src` |
+| `2` | `workspace/TerminalTabTailor/src` |
+
+It applies to every tab — the name it gets when it opens as much as the one it takes while following its shell.
+A folder with fewer parents than asked for simply shows all it has, and levels are always joined with `/`
+whatever separator the shell reports, so a tab reads the same on every platform.
+
+The two naming styles that are not paths — *module name* and *project name* — are unaffected: prepending a
+folder to a module name would say nothing about where the tab sits.
+
+## Keep the name of the current folder
+
+Turn this on and a tab stops being named once and for all: it follows its shell. `cd ../frontend` and the tab
+becomes `frontend`, `cd ..` and it becomes what the parent is called — with as many parent folders as the
+setting above asks for. It applies to every tab in the Terminal tool window, on both engines, whatever opened
+them.
+
+> **On Windows this works with PowerShell and cmd only.** On macOS and Linux, bash, sh, zsh, fish, dash and
+> ksh are followed too. Any other tab simply keeps the name it opened with.
+
+Two things worth knowing:
+
+* Renaming a tab yourself takes it back out of the loop — your name sticks until the tab is closed.
+* The date option still applies, so a followed tab reads `frontend <03-04-24>`.
+
+### Why other shells are not followed
+
+A shell's working directory reaches the IDE one of two ways: the shell reports it through *shell integration*,
+or the IDE asks the OS for the directory of the process it spawned. On Windows, only PowerShell and cmd answer
+through either.
+
+| Shell | Why not |
+| --- | --- |
+| WSL, `ssh`, `docker exec` | the spawned process is only a launcher; the directory it holds belongs to a different machine or filesystem than the shell's |
+| Git Bash, MSYS, Cygwin | a POSIX port keeps an *emulated* working directory it never pushes to the Win32 process, so the process stays where the tab opened |
+
+Neither gets shell integration either — IntelliJ matches the shell name against `bash`, and on Windows the
+executable is `bash.exe`, so the integration script is never injected. With both sources silent there is
+nothing left to read, and rather than show a folder the shell left long ago, the tab keeps its name.
+
+Open WSL tabs with **Terminal (Reworked)**, or set *Settings > Tools > Terminal > Terminal engine* to the
+reworked one, and they follow their shell like any other.
+
 ## Keeping tabs tidy
 
 * Reuse an existing tab when the names match, instead of piling up duplicates — the matching tab is brought back up for you.
@@ -75,6 +126,8 @@ Configurability is at the heart of Terminal Tab Tailor. There are two ways into 
 | Reuse an existing tab when the names match | On |
 | Prompt the renaming dialogue each time a new terminal tab is opened | Off |
 | Incorporate the current date into tab names | On |
+| Keep the name of the current folder | Off |
+| Parent folders to include | `1` |
 | Date template | `dd-MM-yy` |
 | Sort | Alphabetical |
 | Naming style | Parent directory name |

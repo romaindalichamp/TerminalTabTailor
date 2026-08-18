@@ -19,7 +19,6 @@ import com.terminaltabtailor.util.TerminalTabsUtil
 import com.terminaltabtailor.util.VirtualSelectionUtil
 import kotlinx.coroutines.*
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager
-import java.text.SimpleDateFormat
 import java.util.*
 
 class TerminalTabNamesManager {
@@ -72,7 +71,7 @@ class TerminalTabNamesManager {
                     virtualSelection.lastSelectedVirtualFile!!,
                     virtualSelection.lastSelectedVirtualFileParent,
                     virtualSelection.lastSelectedVirtualFileParentModule,
-                    virtualSelection.lastSelectedVirtualFileParentModuleDirName
+                    virtualSelection.lastSelectedVirtualFileParentModuleDirPath
                 )
             }
 
@@ -97,7 +96,7 @@ class TerminalTabNamesManager {
                     virtualSelection.lastSelectedVirtualFile!!,
                     virtualSelection.lastSelectedVirtualFileParent,
                     virtualSelection.lastSelectedVirtualFileParentModule,
-                    virtualSelection.lastSelectedVirtualFileParentModuleDirName,
+                    virtualSelection.lastSelectedVirtualFileParentModuleDirPath,
                     openReworkedEngine
                 )
             }
@@ -111,7 +110,7 @@ class TerminalTabNamesManager {
             lastSelectedVirtualFile: VirtualFile,
             lastSelectedVirtualFileParent: VirtualFile?,
             lastSelectedVirtualFileParentModule: Module?,
-            lastSelectedVirtualFileParentModuleDirName: String?
+            lastSelectedVirtualFileParentModuleDirPath: String?
         ): Boolean {
 
             val constructedName: String = constructNewTabName(
@@ -119,7 +118,7 @@ class TerminalTabNamesManager {
                 lastSelectedVirtualFile,
                 lastSelectedVirtualFileParent,
                 lastSelectedVirtualFileParentModule,
-                lastSelectedVirtualFileParentModuleDirName
+                lastSelectedVirtualFileParentModuleDirPath
             )
 
             val terminalExists: Content? =
@@ -149,7 +148,7 @@ class TerminalTabNamesManager {
             lastSelectedVirtualFile: VirtualFile,
             lastSelectedVirtualFileParent: VirtualFile?,
             lastSelectedVirtualFileParentModule: Module?,
-            lastSelectedVirtualFileParentModuleDirName: String?,
+            lastSelectedVirtualFileParentModuleDirPath: String?,
             openReworkedEngine: Boolean
         ): Content? {
 
@@ -158,7 +157,7 @@ class TerminalTabNamesManager {
                 lastSelectedVirtualFile,
                 lastSelectedVirtualFileParent,
                 lastSelectedVirtualFileParentModule,
-                lastSelectedVirtualFileParentModuleDirName
+                lastSelectedVirtualFileParentModuleDirPath
             )
 
             val terminalExists: Content? = TerminalTabsUtil.alreadyExistingTerminalTab(
@@ -244,34 +243,45 @@ class TerminalTabNamesManager {
             lastSelectedVirtualFile: VirtualFile,
             lastSelectedVirtualFileParent: VirtualFile?,
             lastSelectedVirtualFileParentModule: Module?,
-            lastSelectedVirtualFileParentModuleDirName: String?,
+            lastSelectedVirtualFileParentModuleDirPath: String?,
             settings: TerminalTabTailorSettings = settingsService.state,
             now: Date = Date(),
         ): String {
-            var name = lastSelectedVirtualFile.name
+            val parents = settings.currentDirectoryParents
 
-            name = when {
-                settings.selectedTabTypeName == TabNameTypeEnum.FIRST_DIR_NAME && lastSelectedVirtualFile.isFile ->
-                    lastSelectedVirtualFileParent?.name ?: project.name
+            val name = when (settings.selectedTabTypeName) {
+                /*
+                 * A module or project name is not a path, so prepending folders to it would say
+                 * nothing about where the tab sits. These two styles ignore the parent count.
+                 */
+                TabNameTypeEnum.MODULE_NAME -> lastSelectedVirtualFileParentModule?.name ?: project.name
 
-                settings.selectedTabTypeName == TabNameTypeEnum.MODULE_NAME ->
-                    lastSelectedVirtualFileParentModule?.name ?: project.name
+                TabNameTypeEnum.PROJECT_NAME -> project.name
 
-                settings.selectedTabTypeName == TabNameTypeEnum.MODULE_DIR_NAME ->
-                    lastSelectedVirtualFileParentModuleDirName
+                TabNameTypeEnum.MODULE_DIR_NAME ->
+                    lastSelectedVirtualFileParentModuleDirPath
+                        ?.let { TerminalTabsUtil.directoryNameOf(it, parents) }
                         ?: lastSelectedVirtualFileParentModule?.name
                         ?: project.name
 
-                settings.selectedTabTypeName == TabNameTypeEnum.PROJECT_NAME -> project.name
+                TabNameTypeEnum.FIRST_DIR_NAME ->
+                    if (lastSelectedVirtualFile.isFile) {
+                        lastSelectedVirtualFileParent?.let { pathName(it, parents) } ?: project.name
+                    } else {
+                        pathName(lastSelectedVirtualFile, parents)
+                    }
 
-                else -> name
+                TabNameTypeEnum.FILE_NAME -> pathName(lastSelectedVirtualFile, parents)
             }
 
-            if (settings.useCurrentDate) {
-                name += " <${SimpleDateFormat(settings.dateTemplate).format(now)}>"
-            }
-
-            return name
+            return TerminalTabsUtil.appendDate(name, settings, now)
         }
+
+        /*
+         * Falls back to the plain name when the file reports no path — which is also what keeps the
+         * name right for the default of no parents, where the two are the same thing.
+         */
+        private fun pathName(file: VirtualFile, parents: Int): String =
+            file.path?.let { TerminalTabsUtil.directoryNameOf(it, parents) } ?: file.name
     }
-}
+}

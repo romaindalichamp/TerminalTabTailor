@@ -7,5 +7,5 @@ data class VirtualSelection(
     var lastSelectedVirtualFile: VirtualFile? = null,
     var lastSelectedVirtualFileParent: VirtualFile? = null,
     var lastSelectedVirtualFileParentModule: Module? = null,
-    var lastSelectedVirtualFileParentModuleDirName: String? = null,
-)
+    var lastSelectedVirtualFileParentModuleDirPath: String? = null,
+)

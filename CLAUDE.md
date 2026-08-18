@@ -84,6 +84,57 @@ listeners (record selection)        actions (entry points)
   reworked frontend and always creates a reworked tab; `TerminalToolWindowManager.openTerminalIn` always creates
   a classic one. That is why the engine is an explicit menu choice rather than something the plugin infers —
   do not "fix" this by reading `TerminalOptionsProvider`, it changes nothing about what gets created.
+- **`CurrentDirectoryTabNameTracker`** (project service, started by `StartupActivity`) backs the "keep the name
+  of the current folder" option: it renames tabs as their shell `cd`s around. It **polls** on the service's own
+  coroutine scope because neither engine publishes the working directory — `TerminalView.getCurrentDirectory()`
+  and `TerminalWidget.getCurrentDirectory()` are plain getters, and the change callbacks
+  (`TerminalWorkingDirectoryTracker`, `TerminalSessionModel.terminalState`) sit behind backend/impl classes. Note
+  both are *functions*, not Kotlin properties: `view.currentDirectory` does not compile. A tab whose display name
+  stops matching what the tracker last wrote is treated as user-renamed and dropped, which is what keeps
+  "Rename Session" meaningful while the option is on.
+- **The two engines answer `getCurrentDirectory()` from different places**, and it decides which shells can be
+  followed. Reworked reads `TerminalSessionModel.terminalState.currentDirectory`, i.e. what the shell pushes
+  through shell integration — correct even inside a WSL distro. Classic goes to
+  `TerminalWorkingDirectoryManager` → `ProcessInfoUtil` → `WinConPtyProcess.getWorkingDirectory()`, an OS query
+  about the spawned pty process: right for PowerShell/cmd, meaningless for `wsl.exe`, whose Windows-side
+  directory never follows the shell in the distro. Hence `TerminalTabsUtil.canFollowWorkingDirectory`, a
+  **whitelist**: `powershell`/`pwsh`/`cmd` on Windows, `bash`/`zsh`/`sh`/`fish`/`dash`/`ksh` elsewhere. Anything
+  else keeps the name it opened with. It is a whitelist rather than a blacklist of launchers because the list of
+  things that *don't* work is open-ended (WSL, per-distro launchers, ssh, docker, every MSYS/Cygwin port) while
+  what does work is short and verified. Host-dependent, so `isWindows` is a parameter with a
+  `SystemInfo.isWindows` default, per the testability pattern below.
+
+  Verified from a sandbox log, not assumed: a Git Bash tab reported its launch directory unchanged for 35
+  minutes while reworked PowerShell tabs moved normally. There is **no** public API exposing the shell-integration
+  directory of a classic tab: `TerminalWorkingDirectoryManager.getWorkingDirectory(Content)` is package-private,
+  every public overload funnels into the OS query, and `TerminalWidget.getSession()` throws
+  `UnsupportedOperationException`. **A reworked tab exposes no widget at all**, so shell integration is its only
+  source: `resolveFromEngine` must consult it *before* looking for a widget, and must not gate it on the shell
+  name (the shell's own report is right whatever the shell). Requiring a widget first regressed every reworked
+  tab to "known to neither engine". Report the engine (`findTabByContent != null`) separately from whichever
+  source answered, or the diagnostics lie. The backend *does* keep
+  a per-session directory with a heuristic fallback for exactly that case
+  (`TerminalTabsManager.getTerminalTabs()` → `TerminalSessionTab.workingDirectory`) — but `TerminalTabsManager`
+  is Kotlin-`internal`, so it does not compile from a plugin. Don't be fooled by `javap`: `internal` shows up as
+  public JVM bytecode. Both sources are chained anyway, never early-returned, since a tab may answer from either.
+- **IntelliJ injects no shell integration for Git Bash on Windows**, so nothing can follow such a tab — verified,
+  not guessed. `LocalTerminalDirectRunner` always calls `LocalShellIntegrationInjector.injectShellIntegration`,
+  which derives the shell name with `PathUtil.getFileName` — `bash.exe` — and matches it through
+  `ShellNameUtil.isBash`, whose literals are `bash`/`sh` with **no `.exe` variant** (only `pwsh` has one). So
+  `addBashRcFileArgument` never runs. The sandbox log shows it plainly: PowerShell starts as
+  `[powershell.exe, …, -File, …\powershell-integration.ps1]` while bash starts as bare
+  `[C:\Program Files\Git\bin\bash.exe]`. Dropping the `.exe` from the configured shell path is the likely
+  workaround, and normalising it in the plugin's own `TerminalToolWindowTabBuilder.shellCommand(...)` would be
+  the code equivalent — deliberately *not* done, as it rewrites what the IDE executes to route around a platform
+  bug that a future release may simply fix.
+- That OS query **blocks up to 2 seconds** (`CompletableFuture.get(2000, MILLISECONDS)`), so the tracker reads
+  directories on `Dispatchers.IO` and hops to the EDT only to write names. Never poll it from the EDT.
+- **Predefined shells (the `+` dropdown) already follow the engine setting.** The platform ships two
+  `TerminalNewPredefinedSessionAction`s — `org.jetbrains.plugins.terminal.action` (classic) and
+  `com.intellij.terminal.frontend.action` (reworked, whose `OpenShellAction` calls
+  `TerminalInternalUtilsKt.createTerminalTab`). Don't add predefined-shell entries through
+  `openPredefinedTerminalProvider` to "make them reworked": they already are, and the plugin's own provider
+  would only duplicate the list. The EP is declared by the terminal plugin but implemented by nobody in it.
 - **Settings** are an application-level `PersistentStateComponent` (`TerminalTabTailorSettingsService` →
   `TerminalTabTailorSettings.xml`), rendered by `TerminalTabTailorConfigurable` with the Kotlin UI DSL. All user-facing
   strings live in `src/main/resources/TerminalTabTailorBundle.properties`.
@@ -94,6 +145,12 @@ listeners (record selection)        actions (entry points)
   declares `package com.terminaltabtailor.provider` (singular). `plugin.xml` must reference the *package*.
 - **Never touch a service at class-init time** — a past bug (commit 4214834). Every `service<...>()` lookup is behind
   `by lazy { }` in a companion object; keep it that way.
+- **Sorting must restore both the selection and the keyboard focus.** The remove-then-re-add cycle hands the
+  selection to a neighbour *and* takes focus out of the terminal; `setSelectedContent(content)` alone restores
+  neither, leaving the user to click back into the command line. `keepingSelection` therefore calls
+  `setSelectedContent(content, hadFocus)` — and `hadFocus` is captured **before** the sort, so a tab renaming
+  itself while the user types in the editor never steals focus. `isFocused` is a `sortTabs` parameter defaulting
+  to `holdsKeyboardFocus`, per the testability pattern below.
 - **Every `ContentManager` mutation must run on the EDT** (`withContext(Dispatchers.EDT)`), including reordering.
   Sorting is implemented as remove-then-re-add of each `Content` — the tests assert exactly that call order.
 - Coroutines launch on `GlobalScope` from `invokeLater`, so their ambient dispatcher is `Dispatchers.Default`.

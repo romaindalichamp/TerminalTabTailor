@@ -27,21 +27,29 @@ class TerminalTabNamesManagerTest {
     private fun settings(
         type: TabNameTypeEnum,
         useCurrentDate: Boolean = false,
-        dateTemplate: String = "dd-MM-yy"
+        dateTemplate: String = "dd-MM-yy",
+        parents: Int = 0
     ) = TerminalTabTailorSettings().apply {
         this.selectedTabTypeName = type
         this.useCurrentDate = useCurrentDate
         this.dateTemplate = dateTemplate
+        this.currentDirectoryParents = parents
     }
 
-    private fun file(name: String) = mock(VirtualFile::class.java).also {
+    /**
+     * `path` matters as soon as parent folders are asked for; a mock that leaves it unstubbed falls
+     * back to the plain name, which is what the default of no parents produces anyway.
+     */
+    private fun file(name: String, path: String? = null) = mock(VirtualFile::class.java).also {
         `when`(it.name).thenReturn(name)
+        `when`(it.path).thenReturn(path)
         `when`(it.isValid).thenReturn(true)
         `when`(it.isDirectory).thenReturn(false)
     }
 
-    private fun directory(name: String) = mock(VirtualFile::class.java).also {
+    private fun directory(name: String, path: String? = null) = mock(VirtualFile::class.java).also {
         `when`(it.name).thenReturn(name)
+        `when`(it.path).thenReturn(path)
         `when`(it.isValid).thenReturn(true)
         `when`(it.isDirectory).thenReturn(true)
     }
@@ -55,9 +63,9 @@ class TerminalTabNamesManagerTest {
         selected: VirtualFile,
         parent: VirtualFile? = null,
         parentModule: Module? = null,
-        parentModuleDirName: String? = null
+        parentModuleDirPath: String? = null
     ) = TerminalTabNamesManager.constructNewTabName(
-        project, selected, parent, parentModule, parentModuleDirName, settings, fixedDate
+        project, selected, parent, parentModule, parentModuleDirPath, settings, fixedDate
     )
 
     // --- Naming style: file name -------------------------------------------------------------
@@ -140,7 +148,7 @@ class TerminalTabNamesManagerTest {
             settings(TabNameTypeEnum.MODULE_DIR_NAME),
             file("Main.kt"),
             parentModule = module("core"),
-            parentModuleDirName = "core-impl"
+            parentModuleDirPath = "/home/romain/workspace/core-impl"
         )
 
         assertEquals("core-impl", result)
@@ -152,7 +160,7 @@ class TerminalTabNamesManagerTest {
             settings(TabNameTypeEnum.MODULE_DIR_NAME),
             file("Main.kt"),
             parentModule = module("core"),
-            parentModuleDirName = null
+            parentModuleDirPath = null
         )
 
         assertEquals("core", result)
@@ -164,7 +172,7 @@ class TerminalTabNamesManagerTest {
             settings(TabNameTypeEnum.MODULE_DIR_NAME),
             file("Main.kt"),
             parentModule = null,
-            parentModuleDirName = null
+            parentModuleDirPath = null
         )
 
         assertEquals("MyProject", result)
@@ -179,7 +187,7 @@ class TerminalTabNamesManagerTest {
             file("Main.kt"),
             parent = directory("controllers"),
             parentModule = module("core"),
-            parentModuleDirName = "core-impl"
+            parentModuleDirPath = "/home/romain/workspace/core-impl"
         )
 
         assertEquals("MyProject", result)
@@ -218,5 +226,80 @@ class TerminalTabNamesManagerTest {
         )
 
         assertEquals("controllers", result)
+    }
+
+    // --- Parent folders ----------------------------------------------------------------------
+
+    @Test
+    fun `FILE_NAME prepends parent folders`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FILE_NAME, parents = 2),
+            file("Main.kt", "/home/romain/app/src/controllers/Main.kt")
+        )
+
+        assertEquals("src/controllers/Main.kt", result)
+    }
+
+    @Test
+    fun `FIRST_DIR_NAME prepends parent folders of the directory it names`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FIRST_DIR_NAME, parents = 1),
+            file("Main.kt", "/home/romain/app/src/controllers/Main.kt"),
+            parent = directory("controllers", "/home/romain/app/src/controllers")
+        )
+
+        assertEquals("src/controllers", result)
+    }
+
+    @Test
+    fun `FIRST_DIR_NAME prepends parent folders when a directory is selected outright`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FIRST_DIR_NAME, parents = 1),
+            directory("controllers", "/home/romain/app/src/controllers")
+        )
+
+        assertEquals("src/controllers", result)
+    }
+
+    @Test
+    fun `MODULE_DIR_NAME prepends parent folders`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.MODULE_DIR_NAME, parents = 1),
+            file("Main.kt"),
+            parentModule = module("core"),
+            parentModuleDirPath = "/home/romain/workspace/core-impl"
+        )
+
+        assertEquals("workspace/core-impl", result)
+    }
+
+    /**
+     * A module or project name is not a path, so there is nothing to prepend — asking for parents
+     * must leave these two styles exactly as they were.
+     */
+    @Test
+    fun `MODULE_NAME and PROJECT_NAME ignore the parent count`() {
+        val moduleName = nameFor(
+            settings(TabNameTypeEnum.MODULE_NAME, parents = 3),
+            file("Main.kt", "/home/romain/app/src/Main.kt"),
+            parentModule = module("core")
+        )
+        val projectName = nameFor(
+            settings(TabNameTypeEnum.PROJECT_NAME, parents = 3),
+            file("Main.kt", "/home/romain/app/src/Main.kt")
+        )
+
+        assertEquals("core", moduleName)
+        assertEquals("MyProject", projectName)
+    }
+
+    @Test
+    fun `parent folders combine with the date suffix`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FIRST_DIR_NAME, useCurrentDate = true, parents = 1),
+            directory("controllers", "/home/romain/app/src/controllers")
+        )
+
+        assertEquals("src/controllers <03-04-24>", result)
     }
 }

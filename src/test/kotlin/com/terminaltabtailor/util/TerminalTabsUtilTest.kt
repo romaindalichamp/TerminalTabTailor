@@ -184,6 +184,131 @@ class TerminalTabsUtilTest {
         inOrder.verify(contentManager).setSelectedContent(second)
     }
 
+    /**
+     * Sorting is a remove-then-re-add of every tab, and removing the selected one hands the selection
+     * to a neighbour. A tab that renames itself after the shell's working directory sorts the strip
+     * without the user asking, so losing the selection there would move them mid-keystroke.
+     */
+    @Test
+    fun `sortTabs leaves the selected tab selected`() {
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+        val contents = arrayOf(createMockContent("Zeta"), createMockContent("Alpha"))
+        val selected = contents[0]
+
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(contentManager.selectedContent).thenReturn(selected)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService) { false }
+
+        val inOrder = inOrder(contentManager)
+        inOrder.verify(contentManager).addContent(contents[1])
+        inOrder.verify(contentManager).addContent(selected)
+        inOrder.verify(contentManager).setSelectedContent(selected, false)
+    }
+
+    /**
+     * Re-selecting alone leaves keyboard focus outside the terminal, so the user has to click back
+     * into the command line before they can carry on typing.
+     */
+    @Test
+    fun `sortTabs hands focus back to a terminal that had it`() {
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+        val contents = arrayOf(createMockContent("Zeta"), createMockContent("Alpha"))
+        val selected = contents[0]
+
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(contentManager.selectedContent).thenReturn(selected)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService) { it === selected }
+
+        verify(contentManager).setSelectedContent(selected, true)
+    }
+
+    /**
+     * A tab renaming itself after the shell's working directory sorts the strip without anyone asking
+     * for it, so grabbing focus would yank a user typing in the editor away from their code.
+     */
+    @Test
+    fun `sortTabs does not steal focus from elsewhere in the IDE`() {
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+        val contents = arrayOf(createMockContent("Zeta"), createMockContent("Alpha"))
+        val selected = contents[0]
+
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(contentManager.selectedContent).thenReturn(selected)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService) { false }
+
+        verify(contentManager).setSelectedContent(selected, false)
+        verify(contentManager, never()).setSelectedContent(selected, true)
+    }
+
+    /**
+     * Reordering removes every tab before re-adding it, which empties the ContentManager outright when
+     * a single tab is open — and the terminal tool window collapses as soon as its last content goes.
+     */
+    @Test
+    fun `sortTabs leaves a strip that is already in order untouched`() {
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+        val contents = arrayOf(createMockContent("Alpha"), createMockContent("Zeta"))
+
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService)
+
+        verify(contentManager, never()).removeContent(any(), anyBoolean())
+        verify(contentManager, never()).addContent(any())
+    }
+
+    @Test
+    fun `sortTabs leaves a lone tab alone`() {
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+        val contents = arrayOf(createMockContent("wrapper"))
+
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService)
+
+        verify(contentManager, never()).removeContent(any(), anyBoolean())
+    }
+
+    @Test
+    fun `sortTabs selects nothing when no tab was selected`() {
+        val contentManager = mock(ContentManager::class.java)
+        val settingsState = mock(TerminalTabTailorSettings::class.java)
+        val settingsService = mock(TerminalTabTailorSettingsService::class.java)
+        val contents = arrayOf(createMockContent("Zeta"), createMockContent("Alpha"))
+
+        `when`(contentManager.contents).thenReturn(contents)
+        `when`(contentManager.selectedContent).thenReturn(null)
+        `when`(settingsService.state).thenReturn(settingsState)
+        `when`(settingsState.selectedTabTypeSort).thenReturn(TabNameSortEnum.ASC)
+
+        TerminalTabsUtil.sortTabs(contentManager, settingsService) { false }
+
+        verify(contentManager, never()).setSelectedContent(any(), anyBoolean())
+    }
+
     @Test
     fun `ascSort should order contents alphabetically`() {
         val contentManager = mock(ContentManager::class.java)

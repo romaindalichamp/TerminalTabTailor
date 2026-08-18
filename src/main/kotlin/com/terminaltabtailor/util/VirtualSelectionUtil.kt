@@ -17,13 +17,15 @@ class VirtualSelectionUtil {
     companion object {
 
         /*
+         * The full path rather than just the directory name, so that constructNewTabName stays the
+         * single place deciding how much of it a tab shows — the parent count is a naming rule.
+         *
          * Could be achieved with: Paths.get(parentModule?.moduleFilePath).parent?.fileName?.toString()
          * But it avoids this warning: 'getModuleFilePath()' is marked unstable with @ApiStatus.Internal
          */
-        fun getModuleDirectoryName(module: Module?): String? {
+        fun getModuleDirectoryPath(module: Module?): String? {
             val contentRoots = module?.let { ModuleRootManager.getInstance(it).contentRoots }
-            val moduleDir = contentRoots?.firstOrNull()?.path
-            return moduleDir?.substringAfterLast('/')
+            return contentRoots?.firstOrNull()?.path
         }
 
         fun getSelectedFile(e: AnActionEvent, project: Project): VirtualFile? {
@@ -54,7 +56,7 @@ class VirtualSelectionUtil {
                             virtualSelection.lastSelectedVirtualFileParentModule = module
 
 
-                            virtualSelection.lastSelectedVirtualFileParentModuleDirName = getModuleDirectoryName(
+                            virtualSelection.lastSelectedVirtualFileParentModuleDirPath = getModuleDirectoryPath(
                                 virtualSelection.lastSelectedVirtualFileParentModule
                             )
                         }
@@ -65,4 +67,4 @@ class VirtualSelectionUtil {
             return virtualSelection
         }
     }
-}
+}

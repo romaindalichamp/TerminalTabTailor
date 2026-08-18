@@ -6,12 +6,17 @@ import com.intellij.openapi.startup.ProjectActivity
 import com.terminaltabtailor.action.ActionId
 import com.terminaltabtailor.action.CustomRenameTerminalSessionAction
 import com.terminaltabtailor.action.CustomRevealFileInTerminalAction
+import com.terminaltabtailor.service.CurrentDirectoryTabNameTracker
 import org.jetbrains.plugins.terminal.TerminalBundle
 import java.util.*
 
 
 class StartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
+        // No-op until the user turns "keep the name of the current folder" on; the loop stops with
+        // the project, since it runs on the service's own scope.
+        CurrentDirectoryTabNameTracker.getInstance(project).start()
+
         val actionManager = ActionManager.getInstance()
         actionManager
             .getAction(ActionId.TERMINAL_RENAME_SESSION_ID)?.let {
