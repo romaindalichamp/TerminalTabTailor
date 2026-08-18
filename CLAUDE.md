@@ -92,6 +92,17 @@ listeners (record selection)        actions (entry points)
   both are *functions*, not Kotlin properties: `view.currentDirectory` does not compile. A tab whose display name
   stops matching what the tracker last wrote is treated as user-renamed and dropped, which is what keeps
   "Rename Session" meaningful while the option is on.
+- **The tracker must recompute the name the *naming style* asks for**, never impose one of its own —
+  `TerminalTabsUtil.followedName` is that decision, and it is a `when` over the whole `TabNameTypeEnum` so a new
+  style cannot silently inherit the wrong behaviour. Following renaming everything after its folder regardless of
+  style broke two things at once: `FILE_NAME` tabs came back named after the parent folder (the shell's cwd *is*
+  `workingDirectoryOf` for a file selection), and reuse stopped working for every style, because
+  `alreadyExistingTerminalTab` matches the display name exactly against what `constructNewTabName` rebuilds — so
+  each reopen created a duplicate that the tracker then numbered `(2)`, `(3)`, … The invariant is pinned by
+  "following the shell yields the name a reopen looks for" in `TerminalTabNamesManagerTest`. `FILE_NAME` and
+  `PROJECT_NAME` return null (keep the opened name); the module styles resolve the module owning the cwd through
+  `ProjectFileIndex.getModuleForFile`, which needs `FileUtil.toSystemIndependentName` first because the VFS keys
+  on `/` while a Windows shell reports `C:\…`.
 - **The two engines answer `getCurrentDirectory()` from different places**, and it decides which shells can be
   followed. Reworked reads `TerminalSessionModel.terminalState.currentDirectory`, i.e. what the shell pushes
   through shell integration — correct even inside a WSL distro. Classic goes to

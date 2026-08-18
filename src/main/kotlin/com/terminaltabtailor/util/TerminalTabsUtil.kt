@@ -11,6 +11,7 @@ import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.action.ActionId
 import com.terminaltabtailor.enum.TabNameSortEnum
+import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettings
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import java.awt.KeyboardFocusManager
@@ -97,6 +98,37 @@ class TerminalTabsUtil {
             return segments
                 .takeLast(parents.coerceAtLeast(0) + 1)
                 .joinToString("/")
+        }
+
+        /*
+         * What a tab following its shell should be called, or null when the naming style is not a
+         * function of where the shell stands — those tabs keep the name they opened with instead of
+         * being renamed into something their style never asked for.
+         *
+         * The style is the whole point: "keep the name of the current folder" changes *where a name is
+         * computed from*, never *which* name is computed. Ignoring it here renamed every tab after its
+         * folder, which both lost the file name FILE_NAME had just produced and broke tab reuse, since
+         * the name a tab ended up with no longer matched the one constructNewTabName looks for.
+         *
+         * FILE_NAME names something a directory cannot yield, and PROJECT_NAME is the same string
+         * wherever the shell goes; neither follows. The module styles follow the module owning the
+         * directory, which the caller resolves — and which is null as soon as the shell leaves the
+         * project, leaving the tab with its name rather than with a module it is no longer in.
+         */
+        fun followedName(
+            nameType: TabNameTypeEnum,
+            currentDirectory: String,
+            parents: Int = 0,
+            moduleName: String? = null,
+            moduleDirectoryPath: String? = null,
+        ): String? = when (nameType) {
+            TabNameTypeEnum.FILE_NAME, TabNameTypeEnum.PROJECT_NAME -> null
+
+            TabNameTypeEnum.FIRST_DIR_NAME -> directoryNameOf(currentDirectory, parents)
+
+            TabNameTypeEnum.MODULE_NAME -> moduleName
+
+            TabNameTypeEnum.MODULE_DIR_NAME -> moduleDirectoryPath?.let { directoryNameOf(it, parents) }
         }
 
         fun getLastOpenedTab(terminals: ContentManager): Content? {

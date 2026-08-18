@@ -5,7 +5,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettings
+import com.terminaltabtailor.util.TerminalTabsUtil
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
@@ -301,5 +303,61 @@ class TerminalTabNamesManagerTest {
         )
 
         assertEquals("src/controllers <03-04-24>", result)
+    }
+
+    // --- Reuse survives a tab following its shell ---------------------------------------------
+
+    /**
+     * Tab reuse matches on the display name, so a tab that follows its shell stays reusable only for
+     * as long as following it yields the very name a reopen will look for. When the two drifted apart
+     * every reopen built a fresh tab, and the tracker then numbered the duplicates `(2)`, `(3)`, …
+     *
+     * Pinned per style, with the shell sitting where the tab was opened: whatever the style computes
+     * from the selection, following must compute the same thing from the directory — or decline, which
+     * leaves the opened name in place and is just as good.
+     */
+    @Test
+    fun `following the shell yields the name a reopen looks for`() {
+        val moduleDirectory = "/home/romain/workspace/proj/api"
+        val shellDirectory = "$moduleDirectory/src/controllers"
+
+        TabNameTypeEnum.entries.forEach { type ->
+            val settings = settings(type, parents = 1)
+
+            val openedName = nameFor(
+                settings,
+                directory("api", moduleDirectory),
+                parentModule = module("api"),
+                parentModuleDirPath = moduleDirectory
+            )
+
+            val followedName = TerminalTabsUtil.followedName(
+                type,
+                // The shell has moved deeper inside the module since the tab opened.
+                shellDirectory,
+                settings.currentDirectoryParents,
+                moduleName = "api",
+                moduleDirectoryPath = moduleDirectory
+            )
+
+            when (type) {
+                // Names a directory, so it genuinely tracks the shell and a reopen elsewhere is
+                // meant to build a new tab.
+                TabNameTypeEnum.FIRST_DIR_NAME -> assertEquals("src/controllers", followedName)
+
+                // Declines to follow: the tab keeps `openedName`, which is what reuse matches on.
+                TabNameTypeEnum.FILE_NAME, TabNameTypeEnum.PROJECT_NAME -> assertNull(
+                    followedName,
+                    "$type is not a function of a directory and must leave its tabs alone"
+                )
+
+                // Follows, and lands back on the opened name because the shell is still in the module.
+                else -> assertEquals(
+                    openedName,
+                    followedName,
+                    "$type must survive a cd inside its own module, or reuse builds duplicates"
+                )
+            }
+        }
     }
 }

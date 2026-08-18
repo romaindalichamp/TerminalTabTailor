@@ -1,5 +1,6 @@
 package com.terminaltabtailor.util
 
+import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettings
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -174,5 +175,86 @@ class CurrentDirectoryNameTest {
         val now = SimpleDateFormat("dd-MM-yy").parse("03-04-24")
 
         assertEquals("src <2024-04-03>", TerminalTabsUtil.appendDate("src", settings, now))
+    }
+
+    // --- Following a shell honours the naming style ------------------------------------------
+
+    /**
+     * A shell has no file to be named after, so following one would replace the very name the style
+     * asked for with the folder holding it — which is exactly what it did before, and what made a
+     * tab opened as `Main.kt` come back called `controllers`.
+     */
+    @Test
+    fun `FILE_NAME does not follow the shell`() {
+        assertNull(
+            TerminalTabsUtil.followedName(
+                TabNameTypeEnum.FILE_NAME,
+                "/home/romain/workspace/proj/api/src",
+                parents = 1
+            )
+        )
+    }
+
+    /** The same string wherever the shell walks, so there is nothing to recompute. */
+    @Test
+    fun `PROJECT_NAME does not follow the shell`() {
+        assertNull(
+            TerminalTabsUtil.followedName(TabNameTypeEnum.PROJECT_NAME, "/home/romain/workspace/proj/api")
+        )
+    }
+
+    @Test
+    fun `FIRST_DIR_NAME follows the directory itself`() {
+        assertEquals(
+            "api/src",
+            TerminalTabsUtil.followedName(
+                TabNameTypeEnum.FIRST_DIR_NAME,
+                "/home/romain/workspace/proj/api/src",
+                parents = 1
+            )
+        )
+    }
+
+    /**
+     * The module owning the directory, not the directory: `cd`-ing deeper into a module leaves the
+     * name alone, which is what keeps the tab matching the name a reopen looks for.
+     */
+    @Test
+    fun `MODULE_NAME follows the module owning the directory`() {
+        assertEquals(
+            "api",
+            TerminalTabsUtil.followedName(
+                TabNameTypeEnum.MODULE_NAME,
+                "/home/romain/workspace/proj/api/src",
+                parents = 2,
+                moduleName = "api",
+                moduleDirectoryPath = "/home/romain/workspace/proj/api"
+            ),
+            "A module name is not a path, so the parent count must not touch it"
+        )
+    }
+
+    @Test
+    fun `MODULE_DIR_NAME follows the content root of the module owning the directory`() {
+        assertEquals(
+            "proj/api",
+            TerminalTabsUtil.followedName(
+                TabNameTypeEnum.MODULE_DIR_NAME,
+                "/home/romain/workspace/proj/api/src",
+                parents = 1,
+                moduleName = "api",
+                moduleDirectoryPath = "/home/romain/workspace/proj/api"
+            )
+        )
+    }
+
+    /**
+     * `cd /tmp`, a sibling repository, or any path the VFS cannot map: the caller resolves no module,
+     * and naming the tab after the folder anyway would leave it advertising a module it is not in.
+     */
+    @Test
+    fun `the module styles keep their name once the shell leaves the project`() {
+        assertNull(TerminalTabsUtil.followedName(TabNameTypeEnum.MODULE_NAME, "/tmp", parents = 1))
+        assertNull(TerminalTabsUtil.followedName(TabNameTypeEnum.MODULE_DIR_NAME, "/tmp", parents = 1))
     }
 }

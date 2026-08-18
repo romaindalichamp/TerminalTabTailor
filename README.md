@@ -81,7 +81,24 @@ them.
 > **On Windows this works with PowerShell and cmd only.** On macOS and Linux, bash, sh, zsh, fish, dash and
 > ksh are followed too. Any other tab simply keeps the name it opened with.
 
-Two things worth knowing:
+### It follows the naming style you picked
+
+This option changes *where a name is computed from*, never *which* name is computed — your naming style still
+decides that. Two of them are not functions of a directory at all, so their tabs are left alone:
+
+| Naming style | `cd`-ing to `~/workspace/proj/api/src` renames the tab to |
+| --- | --- |
+| Directory names *(default)* | `api/src` — the folder itself |
+| Parent module's name | `api` — the module owning that folder |
+| Parent module's directory | `proj/api` — that module's own folder |
+| File names | *unchanged* — a shell has no file to be named after |
+| Project name | *unchanged* — it is the same name wherever the shell goes |
+
+The two module styles follow the module the shell is *in*, so `cd`-ing deeper inside a module leaves the tab
+alone. Walk out of the project altogether — `cd /tmp`, a sibling repository — and the tab keeps its name rather
+than advertise a module it is no longer in.
+
+Two more things worth knowing:
 
 * Renaming a tab yourself takes it back out of the loop — your name sticks until the tab is closed.
 * The date option still applies, so a followed tab reads `frontend <03-04-24>`.

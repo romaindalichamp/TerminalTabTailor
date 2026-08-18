@@ -14,6 +14,7 @@
     <b>Added</b>
     <ul>
       <li><b>Keep the name of the current folder: </b> a new option under Settings &gt; Tools &gt; Terminal Tab Tailor. A tab stops being named once and for all and follows its shell instead - <code>cd ../frontend</code> and the tab becomes <b>frontend</b>. It covers every tab in the Terminal tool window, whatever opened them, on either engine. Renaming a tab yourself takes it back out of the loop, and your date option still applies. Off by default.</li>
+      <li><b>Following honours your naming style. </b> The option changes where a name is computed from, not which name: the directory styles track the folder, the module styles track the module the shell is <i>in</i> - so a <code>cd</code> deeper inside a module leaves the tab alone, and walking out of the project keeps its name rather than advertising a module it is no longer in - while file names and the project name never change, having nothing a directory can yield.</li>
       <li><b>Parent folders to include: </b> <code>src</code> alone tells you little when every module has one, so ask for 1 and the tab reads <code>TerminalTabTailor/src</code>, for 2 and it reads <code>workspace/TerminalTabTailor/src</code>. It applies to every tab, the name it gets when it opens as much as the one it takes while following its shell. The module and project naming styles are unaffected, being names rather than paths. Defaults to 1.</li>
       <li><b>On Windows this works with PowerShell and cmd only. </b> No other shell reports a working directory that follows it: WSL, ssh and docker hide the real shell behind a launcher, while Git Bash, MSYS and Cygwin keep an emulated directory the Windows process never learns about - and the IDE loads no shell integration for any of them. Those tabs simply keep the name they opened with. On macOS and Linux, bash, sh, zsh, fish, dash and ksh are followed too.</li>
     </ul>
@@ -47,7 +48,7 @@
     <ul>
       <li>Reuse an existing tab when the names match.</li>
       <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
-      <li><b>Keep the name of the current folder</b> - tabs follow their shell, so a <code>cd</code> renames the tab. On Windows this works with PowerShell and cmd only. Renaming a tab yourself takes it back out of the loop.</li>
+      <li><b>Keep the name of the current folder</b> - tabs follow their shell, so a <code>cd</code> renames the tab, according to the naming style you picked. On Windows this works with PowerShell and cmd only. Renaming a tab yourself takes it back out of the loop.</li>
       <li>Add parent folders to a tab's name, so it reads <code>TerminalTabTailor/src</code> rather than <code>src</code>.</li>
       <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-yy).</li>
       <li>Maintain tabs in perpetual alphabetical order.</li>
