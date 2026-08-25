@@ -119,7 +119,7 @@ Configurability is at the heart of Terminal Tab Tailor. There are two ways into 
 
 ![img_7.png](img_7.png)
 
-![img_3.png](img_3.png)
+![img_6.png](img_6.png)
 
 | Setting | Default |
 | --- | --- |
