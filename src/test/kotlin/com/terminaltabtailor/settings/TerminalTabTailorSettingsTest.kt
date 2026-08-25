@@ -32,6 +32,11 @@ class TerminalTabTailorSettingsTest {
     }
 
     @Test
+    fun `names a tab after its folder and one parent`() {
+        assertEquals(1, defaults.currentDirectoryParents)
+    }
+
+    @Test
     fun `formats the date as dd-MM-yy`() {
         assertEquals("dd-MM-yy", defaults.dateTemplate)
     }

@@ -4,7 +4,9 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
+import com.intellij.ui.dsl.builder.RightGap
 import com.intellij.ui.dsl.builder.bind
+import com.intellij.ui.dsl.builder.bindIntText
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
@@ -18,6 +20,11 @@ class TerminalTabTailorConfigurable(private val project: Project) :
     BoundConfigurable(ResourceBundle.getBundle("TerminalTabTailorBundle").getString("settings.displayName")) {
 
     private val bundle: ResourceBundle = ResourceBundle.getBundle("TerminalTabTailorBundle")
+
+    private companion object {
+        // Bounded so the field validates rather than accepting a depth no tab strip could show.
+        private val PARENTS_RANGE = 0..16
+    }
 
     override fun apply() {
         super.apply()
@@ -88,7 +95,23 @@ class TerminalTabTailorConfigurable(private val project: Project) :
                             TabNameTypeEnum.PROJECT_NAME
                         )
                     }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.current_directory_name.text"),
+                            TabNameTypeEnum.CURRENT_DIRECTORY_NAME
+                        ).comment(bundle.getString("settings.name.type.current_directory_name.comment"))
+                    }
                 }.bind(settingsService.state::selectedTabTypeName)
+
+                // Shared by every naming style that names a tab after a directory - first
+                // directory name, module directory name, and follow the shell's current folder -
+                // so it lives in this group, not Options.
+                row(bundle.getString("settings.currentDirectoryParents.text")) {
+                    intTextField(PARENTS_RANGE)
+                        .bindIntText(settingsService.state::currentDirectoryParents)
+                        .gap(RightGap.SMALL)
+                    comment(bundle.getString("settings.currentDirectoryParents.example"))
+                }
             }
 
             group(bundle.getString("settings.name.origin.label")) {

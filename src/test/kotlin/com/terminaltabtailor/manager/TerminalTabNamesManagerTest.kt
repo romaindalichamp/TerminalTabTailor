@@ -5,7 +5,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettings
+import com.terminaltabtailor.util.TerminalTabsUtil
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
@@ -27,21 +29,29 @@ class TerminalTabNamesManagerTest {
     private fun settings(
         type: TabNameTypeEnum,
         useCurrentDate: Boolean = false,
-        dateTemplate: String = "dd-MM-yy"
+        dateTemplate: String = "dd-MM-yy",
+        parents: Int = 0
     ) = TerminalTabTailorSettings().apply {
         this.selectedTabTypeName = type
         this.useCurrentDate = useCurrentDate
         this.dateTemplate = dateTemplate
+        this.currentDirectoryParents = parents
     }
 
-    private fun file(name: String) = mock(VirtualFile::class.java).also {
+    /**
+     * `path` matters as soon as parent folders are asked for; a mock that leaves it unstubbed falls
+     * back to the plain name, which is what the default of no parents produces anyway.
+     */
+    private fun file(name: String, path: String? = null) = mock(VirtualFile::class.java).also {
         `when`(it.name).thenReturn(name)
+        `when`(it.path).thenReturn(path)
         `when`(it.isValid).thenReturn(true)
         `when`(it.isDirectory).thenReturn(false)
     }
 
-    private fun directory(name: String) = mock(VirtualFile::class.java).also {
+    private fun directory(name: String, path: String? = null) = mock(VirtualFile::class.java).also {
         `when`(it.name).thenReturn(name)
+        `when`(it.path).thenReturn(path)
         `when`(it.isValid).thenReturn(true)
         `when`(it.isDirectory).thenReturn(true)
     }
@@ -55,9 +65,9 @@ class TerminalTabNamesManagerTest {
         selected: VirtualFile,
         parent: VirtualFile? = null,
         parentModule: Module? = null,
-        parentModuleDirName: String? = null
+        parentModuleDirPath: String? = null
     ) = TerminalTabNamesManager.constructNewTabName(
-        project, selected, parent, parentModule, parentModuleDirName, settings, fixedDate
+        project, selected, parent, parentModule, parentModuleDirPath, settings, fixedDate
     )
 
     // --- Naming style: file name -------------------------------------------------------------
@@ -140,7 +150,7 @@ class TerminalTabNamesManagerTest {
             settings(TabNameTypeEnum.MODULE_DIR_NAME),
             file("Main.kt"),
             parentModule = module("core"),
-            parentModuleDirName = "core-impl"
+            parentModuleDirPath = "/home/romain/workspace/core-impl"
         )
 
         assertEquals("core-impl", result)
@@ -152,7 +162,7 @@ class TerminalTabNamesManagerTest {
             settings(TabNameTypeEnum.MODULE_DIR_NAME),
             file("Main.kt"),
             parentModule = module("core"),
-            parentModuleDirName = null
+            parentModuleDirPath = null
         )
 
         assertEquals("core", result)
@@ -164,7 +174,7 @@ class TerminalTabNamesManagerTest {
             settings(TabNameTypeEnum.MODULE_DIR_NAME),
             file("Main.kt"),
             parentModule = null,
-            parentModuleDirName = null
+            parentModuleDirPath = null
         )
 
         assertEquals("MyProject", result)
@@ -179,7 +189,7 @@ class TerminalTabNamesManagerTest {
             file("Main.kt"),
             parent = directory("controllers"),
             parentModule = module("core"),
-            parentModuleDirName = "core-impl"
+            parentModuleDirPath = "/home/romain/workspace/core-impl"
         )
 
         assertEquals("MyProject", result)
@@ -218,5 +228,126 @@ class TerminalTabNamesManagerTest {
         )
 
         assertEquals("controllers", result)
+    }
+
+    // --- Parent folders ----------------------------------------------------------------------
+
+    @Test
+    fun `FILE_NAME prepends parent folders`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FILE_NAME, parents = 2),
+            file("Main.kt", "/home/romain/app/src/controllers/Main.kt")
+        )
+
+        assertEquals("src/controllers/Main.kt", result)
+    }
+
+    @Test
+    fun `FIRST_DIR_NAME prepends parent folders of the directory it names`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FIRST_DIR_NAME, parents = 1),
+            file("Main.kt", "/home/romain/app/src/controllers/Main.kt"),
+            parent = directory("controllers", "/home/romain/app/src/controllers")
+        )
+
+        assertEquals("src/controllers", result)
+    }
+
+    @Test
+    fun `FIRST_DIR_NAME prepends parent folders when a directory is selected outright`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FIRST_DIR_NAME, parents = 1),
+            directory("controllers", "/home/romain/app/src/controllers")
+        )
+
+        assertEquals("src/controllers", result)
+    }
+
+    @Test
+    fun `MODULE_DIR_NAME prepends parent folders`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.MODULE_DIR_NAME, parents = 1),
+            file("Main.kt"),
+            parentModule = module("core"),
+            parentModuleDirPath = "/home/romain/workspace/core-impl"
+        )
+
+        assertEquals("workspace/core-impl", result)
+    }
+
+    /**
+     * A module or project name is not a path, so there is nothing to prepend — asking for parents
+     * must leave these two styles exactly as they were.
+     */
+    @Test
+    fun `MODULE_NAME and PROJECT_NAME ignore the parent count`() {
+        val moduleName = nameFor(
+            settings(TabNameTypeEnum.MODULE_NAME, parents = 3),
+            file("Main.kt", "/home/romain/app/src/Main.kt"),
+            parentModule = module("core")
+        )
+        val projectName = nameFor(
+            settings(TabNameTypeEnum.PROJECT_NAME, parents = 3),
+            file("Main.kt", "/home/romain/app/src/Main.kt")
+        )
+
+        assertEquals("core", moduleName)
+        assertEquals("MyProject", projectName)
+    }
+
+    @Test
+    fun `parent folders combine with the date suffix`() {
+        val result = nameFor(
+            settings(TabNameTypeEnum.FIRST_DIR_NAME, useCurrentDate = true, parents = 1),
+            directory("controllers", "/home/romain/app/src/controllers")
+        )
+
+        assertEquals("src/controllers <03-04-24>", result)
+    }
+
+    // --- Reuse survives a tab following its shell ---------------------------------------------
+
+    /**
+     * Tab reuse matches on the display name, so a tab following its shell — CURRENT_DIRECTORY_NAME,
+     * the only style the tracker ever touches — stays reusable only for as long as following it
+     * yields the very name a reopen will look for. When the two drifted apart every reopen built a
+     * fresh tab, and the tracker then numbered the duplicates `(2)`, `(3)`, …
+     *
+     * Pinned with the shell sitting where the tab was opened: what CURRENT_DIRECTORY_NAME computes
+     * from the selection at open time and what it computes from the directory while following must be
+     * the same name. Every other style must decline to follow at all, leaving the opened name in place.
+     */
+    @Test
+    fun `following the shell yields the name a reopen looks for`() {
+        val shellDirectory = "/home/romain/workspace/proj/api/src/controllers"
+
+        TabNameTypeEnum.entries.forEach { type ->
+            val settings = settings(type, parents = 1)
+
+            val openedName = nameFor(
+                settings,
+                directory("controllers", shellDirectory),
+                parentModule = module("api"),
+                parentModuleDirPath = "/home/romain/workspace/proj/api"
+            )
+
+            val followedName = TerminalTabsUtil.followedName(type, shellDirectory, settings.currentDirectoryParents)
+
+            when (type) {
+                // The only style the tracker ever touches, and it must land on the very name a
+                // reopen looks for when the shell has not moved since the tab opened.
+                TabNameTypeEnum.CURRENT_DIRECTORY_NAME -> assertEquals(
+                    openedName,
+                    followedName,
+                    "CURRENT_DIRECTORY_NAME must compute the same name at open time and while following"
+                )
+
+                // Every other style is static: the tracker never renames these tabs.
+                else -> assertNull(
+                    followedName,
+                    "$type is not CURRENT_DIRECTORY_NAME and must never be renamed by the tracker"
+                )
+            }
+        }
     }
 }

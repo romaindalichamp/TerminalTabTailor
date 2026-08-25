@@ -11,10 +11,15 @@
     <ul>
       <li><b>IntelliJ IDEA 2025.3 or later: </b> the API that lets a plugin open the terminal engine you selected only exists from 2025.3. If you are on an earlier version, 1.5.1 remains available and keeps working.</li>
     </ul>
-    <b>Changed</b>
+    <b>Added</b>
     <ul>
-      <li><b>Choose your terminal engine when opening a tab: </b> "Open In" now offers <b>Terminal (Reworked)</b> and <b>Terminal (Classic)</b>, both tailoring the tab name as usual. Until now the plugin could only ever open a classic terminal.</li>
-      <li><b>A default shortcut: </b> Ctrl+Shift+X opens a reworked terminal for the current selection out of the box. You can change it under Settings &gt; Keymap.</li>
+      <li><b>Follow the shell's current folder: </b> a 6th naming style, alongside the existing five, under Settings &gt; Tools &gt; Terminal Tab Tailor. Pick it and a tab stops being named once and for all - it follows its shell instead, so <code>cd ../frontend</code> renames the tab to <b>frontend</b>. It covers every tab in the Terminal tool window, whatever opened them, on either engine. Renaming a tab yourself takes it back out of the loop, and your date option still applies. Not the default.</li>
+      <li><b>Parent folders to include: </b> <code>src</code> alone tells you little when every module has one, so ask for 1 and the tab reads <code>TerminalTabTailor/src</code>, for 2 and it reads <code>workspace/TerminalTabTailor/src</code>. It applies to every tab, the name it gets when it opens as much as the one it takes while following its shell. The module and project naming styles are unaffected, being names rather than paths. Defaults to 1.</li>
+      <li><b>On Windows this works with PowerShell and cmd only. </b> No other shell reports a working directory that follows it: WSL, ssh and docker hide the real shell behind a launcher, while Git Bash, MSYS and Cygwin keep an emulated directory the Windows process never learns about - and the IDE loads no shell integration for any of them. Those tabs simply keep the name they opened with. On macOS and Linux, bash, sh, zsh, fish, dash and ksh are followed too.</li>
+    </ul>
+    <b>Fixed</b>
+    <ul>
+      <li><b>Sorting no longer moves you: </b> re-sorting the tab strip used to hand the selection to a neighbouring tab, drop the keyboard focus so you had to click back into the command line before typing again, and could collapse the Terminal tool window when a single tab was open. All three are gone, which also fixes the same jump when applying the settings. Focus only returns to a terminal that already had it, so a tab renaming itself never pulls you out of the editor.</li>
     </ul>
   ]]></change-notes>
 
@@ -42,6 +47,7 @@
     <ul>
       <li>Reuse an existing tab when the names match.</li>
       <li>Prompt the renaming dialogue each time a new terminal tab is opened.</li>
+      <li>Add parent folders to a tab's name, so it reads <code>TerminalTabTailor/src</code> rather than <code>src</code>.</li>
       <li>Incorporate the current date into tab names (with a customizable pattern, defaulting to dd-MM-yy).</li>
       <li>Maintain tabs in perpetual alphabetical order.</li>
       <li>Maintain tabs sorted by descending date.</li>
@@ -56,6 +62,7 @@
       <li>Adopt the name of the parent module.</li>
       <li>Use the parent module's directory name for a more structured approach.</li>
       <li>Consistently use the project's name for all terminal tabs.</li>
+      <li>Follow the shell's current folder, renaming the tab as it changes directory (PowerShell and cmd on Windows; bash, zsh, sh, fish, dash and ksh elsewhere).</li>
     </ul>
     Configurability is at the heart of Terminal Tab Tailor. Find the settings in <b>Settings &gt; Tools &gt; Terminal Tab Tailor</b>, or via <b>Terminal Tab Tailor Settings</b> in the dropdown next to + in the Terminal tool window.
   ]]></description>
@@ -77,6 +84,8 @@
       displayName="Terminal Tab Tailor"/>
     <applicationService
       serviceImplementation="com.terminaltabtailor.settings.TerminalTabTailorSettingsService"/>
+    <projectService
+      serviceImplementation="com.terminaltabtailor.service.CurrentDirectoryTabNameTracker"/>
 
   </extensions>
   <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">

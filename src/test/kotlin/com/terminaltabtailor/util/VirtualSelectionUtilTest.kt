@@ -18,8 +18,12 @@ class VirtualSelectionUtilTest {
      * which Mockito captured as an invocation on the mock. That stopped being true in 2025.3, where
      * it resolves through ProjectRootManager instead.
      */
+    /**
+     * The whole path, not just its last segment: how much of it a tab shows is a naming rule, and it
+     * belongs to constructNewTabName, which alone knows how many parent folders the user asked for.
+     */
     @Test
-    fun `module directory name is the last segment of the first content root`() {
+    fun `module directory path is the path of the first content root`() {
         val module = mock(Module::class.java)
         val moduleRootManager = mock(ModuleRootManager::class.java)
         val contentRoot = mock(VirtualFile::class.java)
@@ -31,17 +35,17 @@ class VirtualSelectionUtilTest {
             staticMock.`when`<ModuleRootManager> { ModuleRootManager.getInstance(module) }
                 .thenReturn(moduleRootManager)
 
-            assertEquals("moduleDir", VirtualSelectionUtil.getModuleDirectoryName(module))
+            assertEquals("/path/to/moduleDir", VirtualSelectionUtil.getModuleDirectoryPath(module))
         }
     }
 
     @Test
-    fun `module directory name is null without a module`() {
-        assertNull(VirtualSelectionUtil.getModuleDirectoryName(null))
+    fun `module directory path is null without a module`() {
+        assertNull(VirtualSelectionUtil.getModuleDirectoryPath(null))
     }
 
     @Test
-    fun `module directory name is null when the module has no content root`() {
+    fun `module directory path is null when the module has no content root`() {
         val module = mock(Module::class.java)
         val moduleRootManager = mock(ModuleRootManager::class.java)
 
@@ -51,7 +55,7 @@ class VirtualSelectionUtilTest {
             staticMock.`when`<ModuleRootManager> { ModuleRootManager.getInstance(module) }
                 .thenReturn(moduleRootManager)
 
-            assertNull(VirtualSelectionUtil.getModuleDirectoryName(module))
+            assertNull(VirtualSelectionUtil.getModuleDirectoryPath(module))
         }
     }
 }
