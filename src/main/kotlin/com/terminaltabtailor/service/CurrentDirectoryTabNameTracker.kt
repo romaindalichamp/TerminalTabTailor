@@ -7,7 +7,6 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTab
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager
-import com.intellij.terminal.frontend.toolwindow.findTabByContent
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentManager
 import com.terminaltabtailor.enum.TabNameTypeEnum
@@ -83,20 +82,33 @@ class CurrentDirectoryTabNameTracker(
         private const val POLL_INTERVAL_MS = 500L
 
         /*
-         * TerminalToolWindowTabsManagerKt.findTabByContent(manager, content) - the compiled-in call
-         * below - is what every platform build up to and including 2025.3 (253) exposes, verified by
-         * extracting that class from the platform jar this plugin actually compiles against. A
-         * JetBrains Marketplace compatibility check against 2026.2.2 EAP (262.10315.19) reported it
-         * gone, which turns into a NoSuchMethodError at that invokestatic - and unlike the exceptions
-         * `start()` already guards against, an Error is not caught there, so every poll tick would
-         * crash the loop exactly like issue #31.
+         * Both TerminalToolWindowTabsManagerKt.findTabByContent(manager, content) - every platform
+         * build up to and including 2025.3 (253), the SDK this plugin compiles against - and its
+         * replacement, the manager-less extension Content.getTerminalTab() that intellij-community's
+         * current source shows living in the same file (first seen around the 2026.2 EAP line), are
+         * looked up reflectively rather than called directly.
          *
-         * intellij-community's current source shows the replacement living in the very same file, as
-         * an extension needing no manager at all - `Content.getTerminalTab()` - but this plugin cannot
-         * reference it directly without dropping support for 253, which CLAUDE.md rules out ("no
-         * untilBuild"). So it is looked up reflectively, once, and only reached when the compiled-in
-         * call turns out to be the one that is missing.
+         * A direct compiled call to either symbol - the shape this used to take, catching
+         * NoSuchMethodError around the old one - is exactly what the IntelliJ Plugin Verifier's
+         * *static* bytecode scan flags as "Method not found" the instant a target build lacks it,
+         * regardless of any surrounding try/catch: the verifier never executes the bytecode, only
+         * reads which symbols an invokestatic instruction references. A JetBrains Marketplace
+         * compatibility check confirmed this directly - the plugin still ran perfectly on 2026.2.2 EAP
+         * (262.10315.19), yet the verifier still reported the compiled-in call as a critical
+         * incompatibility, because a local `pluginVerifier-ignoredProblems.txt` only suppresses this
+         * project's own `verifyPlugin` Gradle task, not the Marketplace's independent run against the
+         * uploaded binary. Resolving both methods reflectively leaves nothing in the compiled class
+         * file for either verifier to resolve against the target IDE's classpath at all.
          */
+        private val findTabByContentMethod: Method? by lazy {
+            try {
+                Class.forName("com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManagerKt")
+                    .getMethod("findTabByContent", TerminalToolWindowTabsManager::class.java, Content::class.java)
+            } catch (e: ReflectiveOperationException) {
+                null
+            }
+        }
+
         private val getTerminalTabMethod: Method? by lazy {
             try {
                 Class.forName("com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManagerKt")
@@ -252,16 +264,16 @@ class CurrentDirectoryTabNameTracker(
         }
     }
 
-    /** See [getTerminalTabMethod] for why this can fall back to reflection. */
+    /** See [findTabByContentMethod] for why both candidate methods are resolved reflectively. */
     private fun findReworkedTab(content: Content): TerminalToolWindowTab? {
+        val manager = TerminalToolWindowTabsManager.getInstance(project)
         return try {
-            TerminalToolWindowTabsManager.getInstance(project).findTabByContent(content)
-        } catch (e: NoSuchMethodError) {
-            try {
-                getTerminalTabMethod?.invoke(null, content) as? TerminalToolWindowTab
-            } catch (e: ReflectiveOperationException) {
-                null
-            }
+            (findTabByContentMethod?.invoke(null, manager, content)
+                ?: getTerminalTabMethod?.invoke(null, content)) as? TerminalToolWindowTab
+        } catch (e: Throwable) {
+            // As permissive as start()'s own catch: a mismatched reflected signature must degrade to
+            // "no reworked tab found" for this one tab, not abort the whole poll tick.
+            null
         }
     }
 

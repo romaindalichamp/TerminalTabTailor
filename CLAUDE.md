@@ -19,8 +19,10 @@ selected project-tree/editor item, optionally reusing, dating, and sorting them.
 ./gradlew verifyPluginProjectConfiguration            # validates the plugin project configuration
 ```
 
-`verifyPlugin` also exists, but in the 2.x plugin it runs the IntelliJ Plugin Verifier CLI against named IDE
-builds and needs `intellijPlatform { pluginVerification { ides { ... } } }`, which this project does not configure.
+`verifyPlugin` also exists, and in the 2.x plugin it runs the IntelliJ Plugin Verifier CLI against named IDE
+builds via `intellijPlatform { pluginVerification { ides { ... } } }` in `build.gradle.kts`, currently pinned
+to the exact EAP build a JetBrains Marketplace compatibility check once flagged, so a regression there is
+caught locally before it reaches Marketplace.
 
 `signPlugin`/`publishPlugin` read `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`, `PUBLISH_TOKEN`
 from the environment. There is no CI workflow in the repo — releases are driven locally.
@@ -129,12 +131,22 @@ listeners (record selection)        actions (entry points)
   `UnsupportedOperationException`. **A reworked tab exposes no widget at all**, so shell integration is its only
   source: `resolveFromEngine` must consult it *before* looking for a widget, and must not gate it on the shell
   name (the shell's own report is right whatever the shell). Requiring a widget first regressed every reworked
-  tab to "known to neither engine". Report the engine (`findTabByContent != null`) separately from whichever
-  source answered, or the diagnostics lie. The backend *does* keep
+  tab to "known to neither engine". Report the engine (`findReworkedTab(content) != null`) separately from
+  whichever source answered, or the diagnostics lie. The backend *does* keep
   a per-session directory with a heuristic fallback for exactly that case
   (`TerminalTabsManager.getTerminalTabs()` → `TerminalSessionTab.workingDirectory`) — but `TerminalTabsManager`
   is Kotlin-`internal`, so it does not compile from a plugin. Don't be fooled by `javap`: `internal` shows up as
   public JVM bytecode. Both sources are chained anyway, never early-returned, since a tab may answer from either.
+- **`findReworkedTab` resolves both `TerminalToolWindowTabsManagerKt.findTabByContent` (every build through
+  2025.3/253) and its replacement `Content.getTerminalTab()` (first seen around 2026.2 EAP) reflectively —
+  neither is called directly.** A direct compiled call to either, even guarded by a `catch` around the specific
+  platform build lacking it, still trips as "Method not found" on the IntelliJ Plugin Verifier's *static*
+  bytecode scan: it reads which symbol an `invokestatic` instruction references and never executes the
+  bytecode, so no runtime try/catch changes what it reports. Verified directly against a JetBrains Marketplace
+  compatibility check: the plugin ran perfectly on the flagged EAP build, yet the verifier still reported a
+  critical incompatibility for the compiled-in call — a local Plugin Verifier `ignoredProblemsFile` only
+  suppresses this project's own `verifyPlugin` task, not Marketplace's independent run against the uploaded
+  binary. Going fully reflective for both candidates leaves no bytecode reference for either verifier to flag.
 - **IntelliJ injects no shell integration for Git Bash on Windows**, so nothing can follow such a tab — verified,
   not guessed. `LocalTerminalDirectRunner` always calls `LocalShellIntegrationInjector.injectShellIntegration`,
   which derives the shell name with `PathUtil.getFileName` — `bash.exe` — and matches it through
