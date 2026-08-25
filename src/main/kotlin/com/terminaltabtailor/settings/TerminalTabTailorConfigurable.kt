@@ -53,17 +53,6 @@ class TerminalTabTailorConfigurable(private val project: Project) :
                 row(bundle.getString("settings.dateTemplate.text")) {
                     textField().bindText(settingsService.state::dateTemplate)
                 }
-                row {
-                    checkBox(bundle.getString("settings.followCurrentDirectory.text"))
-                        .bindSelected(settingsService.state::followCurrentDirectory)
-                        .comment(bundle.getString("settings.followCurrentDirectory.comment"))
-                }
-                row(bundle.getString("settings.currentDirectoryParents.text")) {
-                    intTextField(PARENTS_RANGE)
-                        .bindIntText(settingsService.state::currentDirectoryParents)
-                        .gap(RightGap.SMALL)
-                    comment(bundle.getString("settings.currentDirectoryParents.example"))
-                }
             }
 
             group(bundle.getString("settings.sort.label")) {
@@ -106,7 +95,23 @@ class TerminalTabTailorConfigurable(private val project: Project) :
                             TabNameTypeEnum.PROJECT_NAME
                         )
                     }
+                    row {
+                        radioButton(
+                            bundle.getString("settings.name.type.current_directory_name.text"),
+                            TabNameTypeEnum.CURRENT_DIRECTORY_NAME
+                        ).comment(bundle.getString("settings.name.type.current_directory_name.comment"))
+                    }
                 }.bind(settingsService.state::selectedTabTypeName)
+
+                // Shared by every naming style that names a tab after a directory - first
+                // directory name, module directory name, and follow the shell's current folder -
+                // so it lives in this group, not Options.
+                row(bundle.getString("settings.currentDirectoryParents.text")) {
+                    intTextField(PARENTS_RANGE)
+                        .bindIntText(settingsService.state::currentDirectoryParents)
+                        .gap(RightGap.SMALL)
+                    comment(bundle.getString("settings.currentDirectoryParents.example"))
+                }
             }
 
             group(bundle.getString("settings.name.origin.label")) {

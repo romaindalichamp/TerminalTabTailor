@@ -1,15 +1,11 @@
 package com.terminaltabtailor.service
 
 import com.intellij.openapi.application.EDT
-import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectFileIndex
-import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTab
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager
 import com.intellij.terminal.frontend.toolwindow.findTabByContent
 import com.intellij.ui.content.Content
@@ -18,7 +14,6 @@ import com.terminaltabtailor.enum.TabNameTypeEnum
 import com.terminaltabtailor.settings.TerminalTabTailorSettings
 import com.terminaltabtailor.settings.TerminalTabTailorSettingsService
 import com.terminaltabtailor.util.TerminalTabsUtil
-import com.terminaltabtailor.util.VirtualSelectionUtil
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,16 +21,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager
+import java.lang.reflect.Method
 import java.util.*
 
 /**
  * Recomputes every terminal tab's name from the directory the shell is currently sitting in, so a
- * `cd` is reflected in the tab without any action from the user. Off by default, enabled by
- * [com.terminaltabtailor.settings.TerminalTabTailorSettings.followCurrentDirectory].
+ * `cd` is reflected in the tab without any action from the user. Runs only for tabs whose naming
+ * style is [com.terminaltabtailor.enum.TabNameTypeEnum.CURRENT_DIRECTORY_NAME] — see `start()`'s gate
+ * on [com.terminaltabtailor.settings.TerminalTabTailorSettings.selectedTabTypeName]. Every other style
+ * is static: computed once when the tab opens, never touched again.
  *
- * It recomputes the name the configured naming style asks for, it does not impose one of its own —
- * see [TerminalTabsUtil.followedName]. A style that cannot be derived from a directory keeps the name
- * the tab opened with, which is also what keeps such a tab reusable: the name it carries stays the one
+ * It recomputes the name [TerminalTabsUtil.followedName] asks for, it does not impose one of its own.
+ * There used to be module-aware following for the two module styles, resolving the module owning the
+ * shell's directory through `ProjectFileIndex`; that went away once "follow the shell's current
+ * folder" became its own naming style rather than a modifier of the other five, so MODULE_NAME and
+ * MODULE_DIR_NAME are static again, like FILE_NAME and PROJECT_NAME always were. The name this tracker
+ * computes is also what keeps a followed tab reusable: it stays the one
  * [com.terminaltabtailor.manager.TerminalTabNamesManager.constructNewTabName] will look for.
  *
  * Polled rather than event-driven on purpose: neither engine exposes a public flow of the working
@@ -81,6 +82,30 @@ class CurrentDirectoryTabNameTracker(
          */
         private const val POLL_INTERVAL_MS = 500L
 
+        /*
+         * TerminalToolWindowTabsManagerKt.findTabByContent(manager, content) - the compiled-in call
+         * below - is what every platform build up to and including 2025.3 (253) exposes, verified by
+         * extracting that class from the platform jar this plugin actually compiles against. A
+         * JetBrains Marketplace compatibility check against 2026.2.2 EAP (262.10315.19) reported it
+         * gone, which turns into a NoSuchMethodError at that invokestatic - and unlike the exceptions
+         * `start()` already guards against, an Error is not caught there, so every poll tick would
+         * crash the loop exactly like issue #31.
+         *
+         * intellij-community's current source shows the replacement living in the very same file, as
+         * an extension needing no manager at all - `Content.getTerminalTab()` - but this plugin cannot
+         * reference it directly without dropping support for 253, which CLAUDE.md rules out ("no
+         * untilBuild"). So it is looked up reflectively, once, and only reached when the compiled-in
+         * call turns out to be the one that is missing.
+         */
+        private val getTerminalTabMethod: Method? by lazy {
+            try {
+                Class.forName("com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManagerKt")
+                    .getMethod("getTerminalTab", Content::class.java)
+            } catch (e: ReflectiveOperationException) {
+                null
+            }
+        }
+
         fun getInstance(project: Project): CurrentDirectoryTabNameTracker = project.service()
     }
 
@@ -89,14 +114,21 @@ class CurrentDirectoryTabNameTracker(
             while (true) {
                 delay(POLL_INTERVAL_MS)
 
-                if (!settingsService.state.followCurrentDirectory) continue
+                if (settingsService.state.selectedTabTypeName != TabNameTypeEnum.CURRENT_DIRECTORY_NAME) continue
 
                 try {
                     refreshTabNames()
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    // A single bad tick must not end the loop for the rest of the project's life.
+                } catch (e: Throwable) {
+                    /*
+                     * A single bad tick must not end the loop for the rest of the project's life -
+                     * including a platform Error such as NoSuchMethodError from an experimental API
+                     * this plugin has no compile-time guard against (see [getTerminalTabMethod]).
+                     * Broader than Exception on purpose: this used to only catch Exception, and an
+                     * uncaught Error surfaced exactly like issue #31 - an unhandled-exception report,
+                     * not a visible failure.
+                     */
                     LOG.warn("Could not name the terminal tabs after their working directory", e)
                 }
             }
@@ -183,45 +215,17 @@ class CurrentDirectoryTabNameTracker(
     }
 
     /*
-     * The tab's own naming style decides what following the shell means: a directory style is named
-     * after the directory itself, a module style after the module owning it, and the styles that name
-     * something a directory cannot yield answer null so their tabs are left alone.
+     * Whether following means anything at all is entirely the naming style's call: only
+     * CURRENT_DIRECTORY_NAME is a function of a directory, so it is the only style
+     * TerminalTabsUtil.followedName ever answers non-null for — every other style leaves its tabs
+     * exactly as they are.
      */
-    private fun followedNameFor(currentDirectory: String, settings: TerminalTabTailorSettings): String? {
-        val module = moduleOwning(currentDirectory, settings.selectedTabTypeName)
-
-        return TerminalTabsUtil.followedName(
+    private fun followedNameFor(currentDirectory: String, settings: TerminalTabTailorSettings): String? =
+        TerminalTabsUtil.followedName(
             settings.selectedTabTypeName,
             currentDirectory,
             settings.currentDirectoryParents,
-            module?.name,
-            module?.let { VirtualSelectionUtil.getModuleDirectoryPath(it) },
         )
-    }
-
-    /*
-     * Only the two module styles pay for this: mapping a shell's directory back to a module costs a
-     * VFS lookup and an index query, per tab, per tick.
-     *
-     * findFileByPath rather than refreshAndFindFileByPath, which would hit the disk from the EDT. A
-     * directory the VFS has never loaded - or one that is not local at all, such as the path a WSL
-     * shell reports - resolves to no module, and the tab keeps the name it has. So does a shell that
-     * has walked out of the project entirely.
-     *
-     * The path is normalised first: the VFS keys on '/' whatever the host, while a Windows shell
-     * reports 'C:\...' through both sources.
-     */
-    private fun moduleOwning(currentDirectory: String, nameType: TabNameTypeEnum): Module? {
-        if (nameType != TabNameTypeEnum.MODULE_NAME && nameType != TabNameTypeEnum.MODULE_DIR_NAME) {
-            return null
-        }
-
-        val directory = LocalFileSystem.getInstance()
-            .findFileByPath(FileUtil.toSystemIndependentName(currentDirectory))
-            ?: return null
-
-        return runReadAction { ProjectFileIndex.getInstance(project).getModuleForFile(directory) }
-    }
 
     private fun applyName(content: Content, newDisplayName: String) {
         /*
@@ -248,8 +252,21 @@ class CurrentDirectoryTabNameTracker(
         }
     }
 
+    /** See [getTerminalTabMethod] for why this can fall back to reflection. */
+    private fun findReworkedTab(content: Content): TerminalToolWindowTab? {
+        return try {
+            TerminalToolWindowTabsManager.getInstance(project).findTabByContent(content)
+        } catch (e: NoSuchMethodError) {
+            try {
+                getTerminalTabMethod?.invoke(null, content) as? TerminalToolWindowTab
+            } catch (e: ReflectiveOperationException) {
+                null
+            }
+        }
+    }
+
     private fun resolveFromEngine(content: Content): ResolvedDirectory {
-        val reworkedTab = TerminalToolWindowTabsManager.getInstance(project).findTabByContent(content)
+        val reworkedTab = findReworkedTab(content)
         val engine = if (reworkedTab != null) "reworked tab" else "classic tab"
 
         /*

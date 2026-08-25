@@ -308,54 +308,44 @@ class TerminalTabNamesManagerTest {
     // --- Reuse survives a tab following its shell ---------------------------------------------
 
     /**
-     * Tab reuse matches on the display name, so a tab that follows its shell stays reusable only for
-     * as long as following it yields the very name a reopen will look for. When the two drifted apart
-     * every reopen built a fresh tab, and the tracker then numbered the duplicates `(2)`, `(3)`, …
+     * Tab reuse matches on the display name, so a tab following its shell — CURRENT_DIRECTORY_NAME,
+     * the only style the tracker ever touches — stays reusable only for as long as following it
+     * yields the very name a reopen will look for. When the two drifted apart every reopen built a
+     * fresh tab, and the tracker then numbered the duplicates `(2)`, `(3)`, …
      *
-     * Pinned per style, with the shell sitting where the tab was opened: whatever the style computes
-     * from the selection, following must compute the same thing from the directory — or decline, which
-     * leaves the opened name in place and is just as good.
+     * Pinned with the shell sitting where the tab was opened: what CURRENT_DIRECTORY_NAME computes
+     * from the selection at open time and what it computes from the directory while following must be
+     * the same name. Every other style must decline to follow at all, leaving the opened name in place.
      */
     @Test
     fun `following the shell yields the name a reopen looks for`() {
-        val moduleDirectory = "/home/romain/workspace/proj/api"
-        val shellDirectory = "$moduleDirectory/src/controllers"
+        val shellDirectory = "/home/romain/workspace/proj/api/src/controllers"
 
         TabNameTypeEnum.entries.forEach { type ->
             val settings = settings(type, parents = 1)
 
             val openedName = nameFor(
                 settings,
-                directory("api", moduleDirectory),
+                directory("controllers", shellDirectory),
                 parentModule = module("api"),
-                parentModuleDirPath = moduleDirectory
+                parentModuleDirPath = "/home/romain/workspace/proj/api"
             )
 
-            val followedName = TerminalTabsUtil.followedName(
-                type,
-                // The shell has moved deeper inside the module since the tab opened.
-                shellDirectory,
-                settings.currentDirectoryParents,
-                moduleName = "api",
-                moduleDirectoryPath = moduleDirectory
-            )
+            val followedName = TerminalTabsUtil.followedName(type, shellDirectory, settings.currentDirectoryParents)
 
             when (type) {
-                // Names a directory, so it genuinely tracks the shell and a reopen elsewhere is
-                // meant to build a new tab.
-                TabNameTypeEnum.FIRST_DIR_NAME -> assertEquals("src/controllers", followedName)
-
-                // Declines to follow: the tab keeps `openedName`, which is what reuse matches on.
-                TabNameTypeEnum.FILE_NAME, TabNameTypeEnum.PROJECT_NAME -> assertNull(
-                    followedName,
-                    "$type is not a function of a directory and must leave its tabs alone"
-                )
-
-                // Follows, and lands back on the opened name because the shell is still in the module.
-                else -> assertEquals(
+                // The only style the tracker ever touches, and it must land on the very name a
+                // reopen looks for when the shell has not moved since the tab opened.
+                TabNameTypeEnum.CURRENT_DIRECTORY_NAME -> assertEquals(
                     openedName,
                     followedName,
-                    "$type must survive a cd inside its own module, or reuse builds duplicates"
+                    "CURRENT_DIRECTORY_NAME must compute the same name at open time and while following"
+                )
+
+                // Every other style is static: the tracker never renames these tabs.
+                else -> assertNull(
+                    followedName,
+                    "$type is not CURRENT_DIRECTORY_NAME and must never be renamed by the tracker"
                 )
             }
         }

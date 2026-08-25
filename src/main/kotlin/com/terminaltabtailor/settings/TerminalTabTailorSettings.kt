@@ -8,7 +8,6 @@ class TerminalTabTailorSettings {
     var useCurrentDate: Boolean = true
     var performManualRenaming: Boolean = false
     var alreadyExists: Boolean = true
-    var followCurrentDirectory: Boolean = false
 
     /** How many parent folders to prepend: 0 gives `child`, 1 `parent/child`, 2 `grandparent/parent/child`. */
     var currentDirectoryParents: Int = 1

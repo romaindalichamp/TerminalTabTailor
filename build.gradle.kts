@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.10.5"
@@ -42,6 +44,19 @@ intellijPlatform {
             // No upper bound, so a new IDE major does not require a release every time.
             untilBuild = provider { null }
         }
+    }
+
+    pluginVerification {
+        ides {
+            // The build a JetBrains Marketplace compatibility check flagged as binary-incompatible:
+            // TerminalToolWindowTabsManagerKt.findTabByContent(...) was removed by this build, which
+            // is what CurrentDirectoryTabNameTracker.getTerminalTabMethod's reflective fallback exists
+            // for. Pinned by build number, not marketing version, because 2026.2 has no stable release
+            // yet to name it by.
+            create(IntelliJPlatformType.IntellijIdea, "262.10315.19")
+        }
+        // The one compatibility problem this file lists is deliberate - see the comment inside it.
+        ignoredProblemsFile = layout.projectDirectory.file("pluginVerifier-ignoredProblems.txt")
     }
 
     signing {

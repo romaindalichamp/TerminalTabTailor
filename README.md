@@ -48,6 +48,7 @@ Choose from a variety of naming conventions to suit your workflow:
 * Adopt the name of the parent module.
 * Use the parent module's directory name for a more structured approach.
 * Consistently use the project's name for all terminal tabs.
+* Follow the shell's current folder, renaming the tab as it changes directory.
 
 Optionally the current date is appended in angle brackets, so a tab reads `main <03-04-24>`. The date format is yours to change; it defaults to `dd-MM-yy`.
 
@@ -64,44 +65,26 @@ as you ask for:
 | `1` (default) | `TerminalTabTailor/src` |
 | `2` | `workspace/TerminalTabTailor/src` |
 
-It applies to every tab — the name it gets when it opens as much as the one it takes while following its shell.
-A folder with fewer parents than asked for simply shows all it has, and levels are always joined with `/`
-whatever separator the shell reports, so a tab reads the same on every platform.
+It applies to every naming style that names a tab after a directory — parent directory name, parent module's
+directory, and follow the shell's current folder below. A folder with fewer parents than asked for simply
+shows all it has, and levels are always joined with `/` whatever separator the shell reports, so a tab reads
+the same on every platform.
 
 The two naming styles that are not paths — *module name* and *project name* — are unaffected: prepending a
 folder to a module name would say nothing about where the tab sits.
 
-## Keep the name of the current folder
+## Follow the shell's current folder
 
-Turn this on and a tab stops being named once and for all: it follows its shell. `cd ../frontend` and the tab
-becomes `frontend`, `cd ..` and it becomes what the parent is called — with as many parent folders as the
-setting above asks for. It applies to every tab in the Terminal tool window, on both engines, whatever opened
-them.
+Pick this naming style and a tab stops being named once and for all: it follows its shell instead. It opens
+named after the folder it starts in — with as many parent folders as the setting above asks for — then
+`cd ../frontend` and the tab becomes `frontend`, `cd ..` and it becomes what the parent is called. It applies
+to every tab in the Terminal tool window, on both engines, whatever opened them.
 
 > **On Windows this works with PowerShell and cmd only.** On macOS and Linux, bash, sh, zsh, fish, dash and
 > ksh are followed too. Any other tab simply keeps the name it opened with.
 
-### It follows the naming style you picked
-
-This option changes *where a name is computed from*, never *which* name is computed — your naming style still
-decides that. Two of them are not functions of a directory at all, so their tabs are left alone:
-
-| Naming style | `cd`-ing to `~/workspace/proj/api/src` renames the tab to |
-| --- | --- |
-| Directory names *(default)* | `api/src` — the folder itself |
-| Parent module's name | `api` — the module owning that folder |
-| Parent module's directory | `proj/api` — that module's own folder |
-| File names | *unchanged* — a shell has no file to be named after |
-| Project name | *unchanged* — it is the same name wherever the shell goes |
-
-The two module styles follow the module the shell is *in*, so `cd`-ing deeper inside a module leaves the tab
-alone. Walk out of the project altogether — `cd /tmp`, a sibling repository — and the tab keeps its name rather
-than advertise a module it is no longer in.
-
-Two more things worth knowing:
-
-* Renaming a tab yourself takes it back out of the loop — your name sticks until the tab is closed.
-* The date option still applies, so a followed tab reads `frontend <03-04-24>`.
+Renaming a tab yourself takes it back out of the loop — your name sticks until the tab is closed. The date
+option still applies, so a followed tab reads `frontend <03-04-24>`.
 
 ### Why other shells are not followed
 
@@ -143,7 +126,6 @@ Configurability is at the heart of Terminal Tab Tailor. There are two ways into 
 | Reuse an existing tab when the names match | On |
 | Prompt the renaming dialogue each time a new terminal tab is opened | Off |
 | Incorporate the current date into tab names | On |
-| Keep the name of the current folder | Off |
 | Parent folders to include | `1` |
 | Date template | `dd-MM-yy` |
 | Sort | Alphabetical |

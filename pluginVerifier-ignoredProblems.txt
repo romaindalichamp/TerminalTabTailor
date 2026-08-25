@@ -1,0 +1,19 @@
+// Format: <plugin_xml_id>:<plugin_version>:<problem_description_regexp_pattern>
+// https://github.com/JetBrains/intellij-plugin-verifier#-ignored-problems--ip-file
+//
+// The pattern must full-match the problem's short description (String.matches semantics) and must
+// not itself contain a literal ':' - the file is split on ':' before the pattern is even compiled
+// as regex, so a colon inside the pattern silently shifts which segment is id/version/pattern. That
+// is why the trailing " : TerminalToolWindowTab" return-type suffix is ".*" instead of spelled out,
+// and why the parentheses around the parameter list are escaped, since unescaped "(" and ")" match
+// nothing at all rather than the literal characters, and this line is matched in full.
+//
+// TerminalToolWindowTabsManagerKt.findTabByContent(...) was removed from the platform sometime
+// after 2025.3 (253), the SDK this plugin compiles against - see build.gradle.kts's
+// pluginVerification.ides entry and CurrentDirectoryTabNameTracker.kt's getTerminalTabMethod. The
+// call is deliberately still there: it is the fast path for every platform build old enough to
+// still have it, wrapped in a catch for NoSuchMethodError that falls back to the replacement API
+// via reflection on builds that do not. The Plugin Verifier only reads bytecode, so it cannot see
+// that the invokestatic it is flagging is guarded - hence ignoring this one specific, reviewed
+// problem here, rather than raising failureLevel and losing the check for every other one.
+com.terminaltabtailor.TerminalTabTailor::Invocation of unresolved method com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManagerKt.findTabByContent\(TerminalToolWindowTabsManager, Content\).*

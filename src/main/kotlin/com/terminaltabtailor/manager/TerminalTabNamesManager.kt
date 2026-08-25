@@ -264,7 +264,7 @@ class TerminalTabNamesManager {
                         ?: lastSelectedVirtualFileParentModule?.name
                         ?: project.name
 
-                TabNameTypeEnum.FIRST_DIR_NAME ->
+                TabNameTypeEnum.FIRST_DIR_NAME, TabNameTypeEnum.CURRENT_DIRECTORY_NAME ->
                     if (lastSelectedVirtualFile.isFile) {
                         lastSelectedVirtualFileParent?.let { pathName(it, parents) } ?: project.name
                     } else {

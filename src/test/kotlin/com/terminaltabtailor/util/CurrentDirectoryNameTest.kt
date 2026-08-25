@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test
 import java.text.SimpleDateFormat
 
 /**
- * The naming half of "keep the name of the current folder": turning whatever path the shell reports
- * into the tab name. The tracking half lives in
+ * The naming half of the "Follow the shell's current folder" naming style: turning whatever path the
+ * shell reports into the tab name. The tracking half lives in
  * [com.terminaltabtailor.service.CurrentDirectoryTabNameTracker] and needs a running IDE, so it is
  * out of reach here — which is why the decision of *what* to call the tab sits in this util instead.
  */
@@ -179,11 +179,7 @@ class CurrentDirectoryNameTest {
 
     // --- Following a shell honours the naming style ------------------------------------------
 
-    /**
-     * A shell has no file to be named after, so following one would replace the very name the style
-     * asked for with the folder holding it — which is exactly what it did before, and what made a
-     * tab opened as `Main.kt` come back called `controllers`.
-     */
+    /** A shell has no file to be named after, so this style is left static, like it always was. */
     @Test
     fun `FILE_NAME does not follow the shell`() {
         assertNull(
@@ -203,10 +199,13 @@ class CurrentDirectoryNameTest {
         )
     }
 
+    /**
+     * "Follow the shell's current folder" is CURRENT_DIRECTORY_NAME's own naming style now, not a
+     * behaviour FIRST_DIR_NAME gains conditionally — so this style is static like the rest.
+     */
     @Test
-    fun `FIRST_DIR_NAME follows the directory itself`() {
-        assertEquals(
-            "api/src",
+    fun `FIRST_DIR_NAME does not follow the shell`() {
+        assertNull(
             TerminalTabsUtil.followedName(
                 TabNameTypeEnum.FIRST_DIR_NAME,
                 "/home/romain/workspace/proj/api/src",
@@ -215,46 +214,39 @@ class CurrentDirectoryNameTest {
         )
     }
 
-    /**
-     * The module owning the directory, not the directory: `cd`-ing deeper into a module leaves the
-     * name alone, which is what keeps the tab matching the name a reopen looks for.
-     */
+    /** Module-aware following no longer exists: these two styles are static again. */
     @Test
-    fun `MODULE_NAME follows the module owning the directory`() {
-        assertEquals(
-            "api",
+    fun `MODULE_NAME does not follow the shell`() {
+        assertNull(
             TerminalTabsUtil.followedName(
                 TabNameTypeEnum.MODULE_NAME,
                 "/home/romain/workspace/proj/api/src",
-                parents = 2,
-                moduleName = "api",
-                moduleDirectoryPath = "/home/romain/workspace/proj/api"
-            ),
-            "A module name is not a path, so the parent count must not touch it"
-        )
-    }
-
-    @Test
-    fun `MODULE_DIR_NAME follows the content root of the module owning the directory`() {
-        assertEquals(
-            "proj/api",
-            TerminalTabsUtil.followedName(
-                TabNameTypeEnum.MODULE_DIR_NAME,
-                "/home/romain/workspace/proj/api/src",
-                parents = 1,
-                moduleName = "api",
-                moduleDirectoryPath = "/home/romain/workspace/proj/api"
+                parents = 1
             )
         )
     }
 
-    /**
-     * `cd /tmp`, a sibling repository, or any path the VFS cannot map: the caller resolves no module,
-     * and naming the tab after the folder anyway would leave it advertising a module it is not in.
-     */
     @Test
-    fun `the module styles keep their name once the shell leaves the project`() {
-        assertNull(TerminalTabsUtil.followedName(TabNameTypeEnum.MODULE_NAME, "/tmp", parents = 1))
-        assertNull(TerminalTabsUtil.followedName(TabNameTypeEnum.MODULE_DIR_NAME, "/tmp", parents = 1))
+    fun `MODULE_DIR_NAME does not follow the shell`() {
+        assertNull(
+            TerminalTabsUtil.followedName(
+                TabNameTypeEnum.MODULE_DIR_NAME,
+                "/home/romain/workspace/proj/api/src",
+                parents = 1
+            )
+        )
+    }
+
+    /** The one style following actually renames a tab for: the folder itself. */
+    @Test
+    fun `CURRENT_DIRECTORY_NAME follows the directory itself`() {
+        assertEquals(
+            "api/src",
+            TerminalTabsUtil.followedName(
+                TabNameTypeEnum.CURRENT_DIRECTORY_NAME,
+                "/home/romain/workspace/proj/api/src",
+                parents = 1
+            )
+        )
     }
 }

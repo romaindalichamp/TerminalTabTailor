@@ -101,34 +101,35 @@ class TerminalTabsUtil {
         }
 
         /*
-         * What a tab following its shell should be called, or null when the naming style is not a
-         * function of where the shell stands — those tabs keep the name they opened with instead of
-         * being renamed into something their style never asked for.
+         * What a tab following its shell should be called, or null when the naming style is not
+         * CURRENT_DIRECTORY_NAME — every other style is static, computed once when the tab opens,
+         * and keeps that name for its whole life rather than being renamed into something its style
+         * never asked for.
          *
-         * The style is the whole point: "keep the name of the current folder" changes *where a name is
-         * computed from*, never *which* name is computed. Ignoring it here renamed every tab after its
-         * folder, which both lost the file name FILE_NAME had just produced and broke tab reuse, since
-         * the name a tab ended up with no longer matched the one constructNewTabName looks for.
+         * "Follow the shell's current folder" is its own naming style now, not a modifier of the
+         * other five: FILE_NAME, FIRST_DIR_NAME, MODULE_NAME, MODULE_DIR_NAME and PROJECT_NAME all
+         * decline, and CURRENT_DIRECTORY_NAME alone follows, by running directoryNameOf on the
+         * shell's current directory — the very computation FIRST_DIR_NAME uses once, at open time
+         * (see TerminalTabNamesManager.constructNewTabName). That reuse is what keeps a freshly
+         * opened CURRENT_DIRECTORY_NAME tab from being renamed the moment the tracker's first poll
+         * runs, and what keeps tab reuse matching: alreadyExistingTerminalTab compares against the
+         * exact name constructNewTabName would build for the shell's present directory.
          *
-         * FILE_NAME names something a directory cannot yield, and PROJECT_NAME is the same string
-         * wherever the shell goes; neither follows. The module styles follow the module owning the
-         * directory, which the caller resolves — and which is null as soon as the shell leaves the
-         * project, leaving the tab with its name rather than with a module it is no longer in.
+         * Exhaustive on purpose, with no `else` — so a future naming style must be explicitly decided
+         * here rather than silently inheriting null (never following) by accident.
          */
         fun followedName(
             nameType: TabNameTypeEnum,
             currentDirectory: String,
             parents: Int = 0,
-            moduleName: String? = null,
-            moduleDirectoryPath: String? = null,
         ): String? = when (nameType) {
-            TabNameTypeEnum.FILE_NAME, TabNameTypeEnum.PROJECT_NAME -> null
+            TabNameTypeEnum.FILE_NAME,
+            TabNameTypeEnum.FIRST_DIR_NAME,
+            TabNameTypeEnum.MODULE_NAME,
+            TabNameTypeEnum.MODULE_DIR_NAME,
+            TabNameTypeEnum.PROJECT_NAME -> null
 
-            TabNameTypeEnum.FIRST_DIR_NAME -> directoryNameOf(currentDirectory, parents)
-
-            TabNameTypeEnum.MODULE_NAME -> moduleName
-
-            TabNameTypeEnum.MODULE_DIR_NAME -> moduleDirectoryPath?.let { directoryNameOf(it, parents) }
+            TabNameTypeEnum.CURRENT_DIRECTORY_NAME -> directoryNameOf(currentDirectory, parents)
         }
 
         fun getLastOpenedTab(terminals: ContentManager): Content? {
@@ -209,15 +210,23 @@ class TerminalTabsUtil {
             )
         }
 
+        /*
+         * Deferred to a fresh EDT event: sortTabs, which every caller runs immediately before this,
+         * updates the ContentManager's model synchronously through remove-then-re-add, but Swing only
+         * *queues* the resulting revalidate and repaint of the tab strip rather than applying it
+         * inline. Triggering the rename popup synchronously right after reads the tab's on-screen
+         * bounds before they have caught up, so it opens wherever the tab used to sit rather than
+         * where sorting just moved it to.
+         */
         fun performManualRenamingAction(terminalContent: Content) {
-            terminalContent.let {
+            SwingUtilities.invokeLater {
                 val renameAction =
                     ActionManager
                         .getInstance()
                         .getAction(ActionId.TERMINAL_RENAME_SESSION_ID)
 
                 val actionEvent = AnActionEvent.createEvent(
-                    DataManager.getInstance().getDataContext(it.component),
+                    DataManager.getInstance().getDataContext(terminalContent.component),
                     Presentation(),
                     ActionPlaces.UNKNOWN,
                     ActionUiKind.POPUP,

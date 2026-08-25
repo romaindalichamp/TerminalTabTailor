@@ -84,25 +84,32 @@ listeners (record selection)        actions (entry points)
   reworked frontend and always creates a reworked tab; `TerminalToolWindowManager.openTerminalIn` always creates
   a classic one. That is why the engine is an explicit menu choice rather than something the plugin infers —
   do not "fix" this by reading `TerminalOptionsProvider`, it changes nothing about what gets created.
-- **`CurrentDirectoryTabNameTracker`** (project service, started by `StartupActivity`) backs the "keep the name
-  of the current folder" option: it renames tabs as their shell `cd`s around. It **polls** on the service's own
-  coroutine scope because neither engine publishes the working directory — `TerminalView.getCurrentDirectory()`
-  and `TerminalWidget.getCurrentDirectory()` are plain getters, and the change callbacks
-  (`TerminalWorkingDirectoryTracker`, `TerminalSessionModel.terminalState`) sit behind backend/impl classes. Note
-  both are *functions*, not Kotlin properties: `view.currentDirectory` does not compile. A tab whose display name
-  stops matching what the tracker last wrote is treated as user-renamed and dropped, which is what keeps
-  "Rename Session" meaningful while the option is on.
-- **The tracker must recompute the name the *naming style* asks for**, never impose one of its own —
-  `TerminalTabsUtil.followedName` is that decision, and it is a `when` over the whole `TabNameTypeEnum` so a new
-  style cannot silently inherit the wrong behaviour. Following renaming everything after its folder regardless of
-  style broke two things at once: `FILE_NAME` tabs came back named after the parent folder (the shell's cwd *is*
-  `workingDirectoryOf` for a file selection), and reuse stopped working for every style, because
-  `alreadyExistingTerminalTab` matches the display name exactly against what `constructNewTabName` rebuilds — so
-  each reopen created a duplicate that the tracker then numbered `(2)`, `(3)`, … The invariant is pinned by
-  "following the shell yields the name a reopen looks for" in `TerminalTabNamesManagerTest`. `FILE_NAME` and
-  `PROJECT_NAME` return null (keep the opened name); the module styles resolve the module owning the cwd through
-  `ProjectFileIndex.getModuleForFile`, which needs `FileUtil.toSystemIndependentName` first because the VFS keys
-  on `/` while a Windows shell reports `C:\…`.
+- **`CurrentDirectoryTabNameTracker`** (project service, started by `StartupActivity`) backs the "Follow the
+  shell's current folder" naming style: it renames tabs as their shell `cd`s around, but only for tabs opened
+  under that style — `start()` gates the whole poll on `selectedTabTypeName == CURRENT_DIRECTORY_NAME`. It
+  **polls** on the service's own coroutine scope because neither engine publishes the working directory —
+  `TerminalView.getCurrentDirectory()` and `TerminalWidget.getCurrentDirectory()` are plain getters, and the
+  change callbacks (`TerminalWorkingDirectoryTracker`, `TerminalSessionModel.terminalState`) sit behind
+  backend/impl classes. Note both are *functions*, not Kotlin properties: `view.currentDirectory` does not
+  compile. A tab whose display name stops matching what the tracker last wrote is treated as user-renamed and
+  dropped, which is what keeps "Rename Session" meaningful while the style is active.
+- **`TabNameTypeEnum.CURRENT_DIRECTORY_NAME` is a naming style in its own right, not a modifier of the other
+  five.** It used to be a separate boolean (`followCurrentDirectory`) that combined with whichever style was
+  selected, module styles included — resolving the module owning the shell's cwd through
+  `ProjectFileIndex.getModuleForFile`, which needed `FileUtil.toSystemIndependentName` first because the VFS
+  keys on `/` while a Windows shell reports `C:\…`. That module-aware following is gone: presenting a checkbox
+  that silently did nothing for two of the five styles and took over the other three, next to a
+  mutually-exclusive radio group, confused more than it explained, so it became a sixth mutually-exclusive
+  radio button instead. `TerminalTabsUtil.followedName` now answers non-null only for `CURRENT_DIRECTORY_NAME`
+  — every other value, written out explicitly rather than through an `else`, returns null. Keep it exhaustive:
+  this is the same `when` that, in its very first version, renamed every tab after its folder regardless of
+  style, which broke two things at once — `FILE_NAME` tabs came back named after the parent folder (the shell's
+  cwd *is* `workingDirectoryOf` for a file selection), and reuse stopped working, because
+  `alreadyExistingTerminalTab` matches the display name exactly against what `constructNewTabName` rebuilds, so
+  each reopen created a duplicate that the tracker then numbered `(2)`, `(3)`, … The invariant — a
+  `CURRENT_DIRECTORY_NAME` tab must compute the same name at open time and while being followed, everything
+  else must never be touched by the tracker — is pinned by "following the shell yields the name a reopen looks
+  for" in `TerminalTabNamesManagerTest`.
 - **The two engines answer `getCurrentDirectory()` from different places**, and it decides which shells can be
   followed. Reworked reads `TerminalSessionModel.terminalState.currentDirectory`, i.e. what the shell pushes
   through shell integration — correct even inside a WSL distro. Classic goes to
