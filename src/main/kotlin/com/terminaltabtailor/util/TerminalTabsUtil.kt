@@ -43,11 +43,23 @@ class TerminalTabsUtil {
 
         /**
          * The only Windows shells whose working directory can be read as it changes. Everything else
-         * either hides its shell behind a launcher (WSL, ssh, docker) or keeps an emulated directory
-         * the Win32 process never learns about (Git Bash, MSYS, Cygwin) — and IntelliJ injects no
-         * shell integration for them either, so there is nothing left to read.
+         * either hides its shell behind a launcher (WSL, ssh, docker), keeps an emulated directory the
+         * Win32 process never learns about (Git Bash, MSYS, Cygwin), or — powershell and pwsh — never
+         * pushes its location to the OS in the first place.
+         *
+         * Verified end to end, not assumed: a classic PowerShell tab's diagnostic ("the OS reports
+         * '...'") never changed across ~180 poll ticks after a `cd`, and every layer between this
+         * plugin and the OS query was decompiled to rule out caching — TerminalWorkingDirectoryManager,
+         * ProcessInfoUtil, WinConPtyProcess, all query fresh every call, no cache anywhere. The actual
+         * cause is upstream, in PowerShell itself: `Set-Location` never calls Win32's
+         * `SetCurrentDirectory()`, because PowerShell's `$PWD` is tracked by its own provider system,
+         * entirely separate from the OS-level working directory this whitelist exists to gate reading —
+         * see https://github.com/PowerShell/PowerShell/issues/17149 (open, unresolved upstream). Any
+         * tool reading a PowerShell process's OS-level cwd hits the same wall; there is no read on our
+         * side that would fix it. `cmd.exe`'s `cd` does not have this problem — it has always called
+         * `SetCurrentDirectory()` — so it stays whitelisted.
          */
-        private val FOLLOWABLE_WINDOWS_SHELLS = setOf("powershell", "pwsh", "cmd")
+        private val FOLLOWABLE_WINDOWS_SHELLS = setOf("cmd")
 
         /** On a Unix host the shell is the process itself, and `/proc/<pid>/cwd` follows every `cd`. */
         private val FOLLOWABLE_UNIX_SHELLS = setOf("bash", "sh", "zsh", "fish", "dash", "ksh")

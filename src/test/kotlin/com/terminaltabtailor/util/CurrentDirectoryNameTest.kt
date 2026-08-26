@@ -68,14 +68,10 @@ class CurrentDirectoryNameTest {
     }
 
     @Test
-    fun `follows the windows shells that report a moving directory`() {
-        assertTrue(TerminalTabsUtil.canFollowWorkingDirectory(listOf("powershell.exe"), isWindows = true))
-        assertTrue(TerminalTabsUtil.canFollowWorkingDirectory(listOf("pwsh.exe"), isWindows = true))
+    fun `follows cmd on windows`() {
         assertTrue(TerminalTabsUtil.canFollowWorkingDirectory(listOf("cmd.exe"), isWindows = true))
         assertTrue(
-            TerminalTabsUtil.canFollowWorkingDirectory(
-                listOf("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\POWERSHELL.EXE"), isWindows = true
-            ),
+            TerminalTabsUtil.canFollowWorkingDirectory(listOf("C:\\Windows\\System32\\CMD.EXE"), isWindows = true),
             "Windows spells the same shell either case, and set lookups are case sensitive"
         )
     }
@@ -83,8 +79,17 @@ class CurrentDirectoryNameTest {
     /**
      * The shells this plugin cannot follow on Windows, each for its own reason: WSL and ssh hide the
      * real shell behind a launcher, Git Bash and MSYS keep an emulated directory the Win32 process
-     * never learns — and IntelliJ injects no shell integration for any of them, so nothing is left to
+     * never learns, and IntelliJ injects no shell integration for any of them, so nothing is left to
      * read. Their tabs keep the name they opened with rather than showing a folder long left.
+     *
+     * powershell and pwsh belong here too, for a different reason: `Set-Location` never calls Win32's
+     * `SetCurrentDirectory()` — PowerShell/PowerShell#17149, open upstream — so the OS-level directory
+     * this plugin can read never moves either, even though the shell itself did. Verified end to end:
+     * every layer between this plugin and the OS query (TerminalWorkingDirectoryManager,
+     * ProcessInfoUtil, WinConPtyProcess) was decompiled to rule out a cache on our side of the call —
+     * there is none, the query is fresh every time, and it is PowerShell that never updates what it's
+     * asked. Trying anyway would not fix anything: the tab would freeze on whatever it opened with
+     * while a poll that can never succeed keeps burning a blocking, up-to-2-second OS query every tick.
      */
     @Test
     fun `does not follow a windows shell whose directory never moves`() {
@@ -96,6 +101,8 @@ class CurrentDirectoryNameTest {
             )
         )
         assertFalse(TerminalTabsUtil.canFollowWorkingDirectory(listOf("ssh", "romain@buildbox"), isWindows = true))
+        assertFalse(TerminalTabsUtil.canFollowWorkingDirectory(listOf("powershell.exe"), isWindows = true))
+        assertFalse(TerminalTabsUtil.canFollowWorkingDirectory(listOf("pwsh.exe"), isWindows = true))
     }
 
     /** On a Unix host the shell is the process itself, so the very same names are followed. */

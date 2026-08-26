@@ -116,12 +116,20 @@ listeners (record selection)        actions (entry points)
   followed. Reworked reads `TerminalSessionModel.terminalState.currentDirectory`, i.e. what the shell pushes
   through shell integration — correct even inside a WSL distro. Classic goes to
   `TerminalWorkingDirectoryManager` → `ProcessInfoUtil` → `WinConPtyProcess.getWorkingDirectory()`, an OS query
-  about the spawned pty process: right for PowerShell/cmd, meaningless for `wsl.exe`, whose Windows-side
-  directory never follows the shell in the distro. Hence `TerminalTabsUtil.canFollowWorkingDirectory`, a
-  **whitelist**: `powershell`/`pwsh`/`cmd` on Windows, `bash`/`zsh`/`sh`/`fish`/`dash`/`ksh` elsewhere. Anything
-  else keeps the name it opened with. It is a whitelist rather than a blacklist of launchers because the list of
-  things that *don't* work is open-ended (WSL, per-distro launchers, ssh, docker, every MSYS/Cygwin port) while
-  what does work is short and verified. Host-dependent, so `isWindows` is a parameter with a
+  about the spawned pty process: right for cmd, meaningless for `wsl.exe`, whose Windows-side
+  directory never follows the shell in the distro — and, verified end to end, useless for
+  powershell/pwsh too, whose `Set-Location` never calls Win32's `SetCurrentDirectory()`
+  (PowerShell/PowerShell#17149, open upstream), so the OS-level directory this query reads is frozen at
+  the shell's launch directory forever, on any tool that reads it this way, not just this plugin. Every
+  layer between this call and the OS was decompiled to be sure the plugin itself holds no stale cache —
+  `TerminalWorkingDirectoryManager`, `ProcessInfoUtil`, `WinConPtyProcess` all query fresh, every call.
+  Hence `TerminalTabsUtil.canFollowWorkingDirectory`, a **whitelist**: `cmd` on Windows,
+  `bash`/`zsh`/`sh`/`fish`/`dash`/`ksh` elsewhere. Anything else keeps the name it opened with — including
+  powershell/pwsh on the *classic* engine specifically; the reworked engine follows them fine, since shell
+  integration reads what the shell reports, not this OS query. It is a whitelist rather than a blacklist
+  of launchers because the list of things that *don't* work is open-ended (WSL, per-distro launchers, ssh,
+  docker, every MSYS/Cygwin port, now also every shell whose own location-tracking doesn't sync to the OS)
+  while what does work is short and verified. Host-dependent, so `isWindows` is a parameter with a
   `SystemInfo.isWindows` default, per the testability pattern below.
 
   Verified from a sandbox log, not assumed: a Git Bash tab reported its launch directory unchanged for 35
