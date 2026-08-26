@@ -11,15 +11,9 @@
     <ul>
       <li><b>IntelliJ IDEA 2025.3 or later: </b> the API that lets a plugin open the terminal engine you selected only exists from 2025.3. If you are on an earlier version, 1.5.1 remains available and keeps working.</li>
     </ul>
-    <b>Added</b>
-    <ul>
-      <li><b>Follow the shell's current folder: </b> a 6th naming style, alongside the existing five, under Settings &gt; Tools &gt; Terminal Tab Tailor. Pick it and a tab stops being named once and for all - it follows its shell instead, so <code>cd ../frontend</code> renames the tab to <b>frontend</b>. It covers every tab in the Terminal tool window, whatever opened them, on either engine. Renaming a tab yourself takes it back out of the loop, and your date option still applies. Not the default.</li>
-      <li><b>Parent folders to include: </b> <code>src</code> alone tells you little when every module has one, so ask for 1 and the tab reads <code>TerminalTabTailor/src</code>, for 2 and it reads <code>workspace/TerminalTabTailor/src</code>. It applies to every tab, the name it gets when it opens as much as the one it takes while following its shell. The module and project naming styles are unaffected, being names rather than paths. Defaults to 1.</li>
-      <li><b>On Windows this works with PowerShell and cmd only. </b> No other shell reports a working directory that follows it: WSL, ssh and docker hide the real shell behind a launcher, while Git Bash, MSYS and Cygwin keep an emulated directory the Windows process never learns about - and the IDE loads no shell integration for any of them. Those tabs simply keep the name they opened with. On macOS and Linux, bash, sh, zsh, fish, dash and ksh are followed too.</li>
-    </ul>
     <b>Fixed</b>
     <ul>
-      <li><b>Sorting no longer moves you: </b> re-sorting the tab strip used to hand the selection to a neighbouring tab, drop the keyboard focus so you had to click back into the command line before typing again, and could collapse the Terminal tool window when a single tab was open. All three are gone, which also fixes the same jump when applying the settings. Focus only returns to a terminal that already had it, so a tab renaming itself never pulls you out of the editor.</li>
+      <li><b>"Follow the shell's current folder" no longer claims to work for PowerShell and pwsh on the classic engine. </b> It never actually did: <code>Set-Location</code> doesn't call Win32's <code>SetCurrentDirectory()</code>, an open upstream PowerShell issue, so the OS-level query this plugin's classic engine relies on stayed frozen at the shell's launch directory no matter how many times it was asked - not something this plugin can read around. Verified end to end before landing this fix: every layer between this plugin and the OS query was checked for a cache on our side, there was none. Classic + cmd is unaffected and keeps following normally, and PowerShell/pwsh follow correctly on the reworked engine, which reads shell integration instead of the OS. A PowerShell/pwsh tab on the classic engine now simply keeps the name it opened with, like any other shell this plugin cannot follow, instead of silently freezing on the wrong name.</li>
     </ul>
   ]]></change-notes>
 
@@ -62,7 +56,7 @@
       <li>Adopt the name of the parent module.</li>
       <li>Use the parent module's directory name for a more structured approach.</li>
       <li>Consistently use the project's name for all terminal tabs.</li>
-      <li>Follow the shell's current folder, renaming the tab as it changes directory (PowerShell and cmd on Windows; bash, zsh, sh, fish, dash and ksh elsewhere).</li>
+      <li>Follow the shell's current folder, renaming the tab as it changes directory (every shell on the reworked engine; cmd only on the classic engine on Windows - PowerShell and pwsh have an upstream limitation there; bash, zsh, sh, fish, dash and ksh on macOS and Linux).</li>
     </ul>
     Configurability is at the heart of Terminal Tab Tailor. Find the settings in <b>Settings &gt; Tools &gt; Terminal Tab Tailor</b>, or via <b>Terminal Tab Tailor Settings</b> in the dropdown next to + in the Terminal tool window.
   ]]></description>

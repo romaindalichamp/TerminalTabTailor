@@ -80,29 +80,33 @@ named after the folder it starts in — with as many parent folders as the setti
 `cd ../frontend` and the tab becomes `frontend`, `cd ..` and it becomes what the parent is called. It applies
 to every tab in the Terminal tool window, on both engines, whatever opened them.
 
-> **On Windows this works with PowerShell and cmd only.** On macOS and Linux, bash, sh, zsh, fish, dash and
-> ksh are followed too. Any other tab simply keeps the name it opened with.
+> **Reworked engine:** PowerShell, cmd, and every Unix shell below are followed. **Classic engine, on
+> Windows:** cmd only — PowerShell and pwsh cannot be, for a reason outside this plugin's control (see
+> below). Any other tab simply keeps the name it opened with.
 
 Renaming a tab yourself takes it back out of the loop — your name sticks until the tab is closed. The date
 option still applies, so a followed tab reads `frontend <03-04-24>`.
 
 ### Why other shells are not followed
 
-A shell's working directory reaches the IDE one of two ways: the shell reports it through *shell integration*,
-or the IDE asks the OS for the directory of the process it spawned. On Windows, only PowerShell and cmd answer
-through either.
+A shell's working directory reaches the IDE one of two ways: the shell reports it through *shell integration*
+(the reworked engine's only source, and the more reliable one — the shell itself says where it is), or the IDE
+asks the OS for the directory of the process it spawned (the classic engine's only source, since there is no
+public API exposing a classic tab's shell integration to a plugin).
 
-| Shell | Why not |
+| Shell | Why the classic engine can't follow it |
 | --- | --- |
+| PowerShell, pwsh | `Set-Location` never calls Win32's `SetCurrentDirectory()` — PowerShell tracks `$PWD` through its own provider system, entirely apart from the OS-level directory this engine reads. Open upstream: [PowerShell/PowerShell#17149](https://github.com/PowerShell/PowerShell/issues/17149). The reworked engine is unaffected — shell integration reads what the shell itself reports, not the OS-level directory. |
 | WSL, `ssh`, `docker exec` | the spawned process is only a launcher; the directory it holds belongs to a different machine or filesystem than the shell's |
 | Git Bash, MSYS, Cygwin | a POSIX port keeps an *emulated* working directory it never pushes to the Win32 process, so the process stays where the tab opened |
 
-Neither gets shell integration either — IntelliJ matches the shell name against `bash`, and on Windows the
-executable is `bash.exe`, so the integration script is never injected. With both sources silent there is
-nothing left to read, and rather than show a folder the shell left long ago, the tab keeps its name.
+Git Bash, MSYS and Cygwin also get no shell integration — IntelliJ matches the shell name against `bash`, and
+on Windows the executable is `bash.exe`, so the integration script is never injected. With both sources silent
+there is nothing left to read, and rather than show a folder the shell left long ago, the tab keeps its name.
 
 Open WSL tabs with **Terminal (Reworked)**, or set *Settings > Tools > Terminal > Terminal engine* to the
-reworked one, and they follow their shell like any other.
+reworked one, and they follow their shell like any other — the same fix works for classic PowerShell tabs,
+since the reworked engine reads shell integration instead of the OS.
 
 ## Keeping tabs tidy
 

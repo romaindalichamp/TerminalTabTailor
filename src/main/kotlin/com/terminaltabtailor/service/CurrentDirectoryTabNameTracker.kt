@@ -45,9 +45,13 @@ import java.util.*
  * cast to. The interval is coarse enough that reading a handful of tabs costs nothing.
  *
  * Two public sources exist: shell integration, through the reworked engine, and an OS query about the
- * spawned process, through a widget. On Windows the pair only ever answers for PowerShell and cmd —
+ * spawned process, through a widget. On Windows the pair only ever answers for cmd —
  * see [TerminalTabsUtil.canFollowWorkingDirectory] — so every other shell is left alone rather than
- * named after a folder it left long ago. The terminal backend does keep a directory of its own, with
+ * named after a folder it left long ago. PowerShell and pwsh look eligible (a widget, a whitelisted
+ * process name) but never actually move: `Set-Location` doesn't call Win32's `SetCurrentDirectory()`,
+ * an open upstream PowerShell issue (PowerShell/PowerShell#17149), so this plugin's OS query stays
+ * frozen at the shell's launch directory no matter how many times the process is asked. The terminal
+ * backend does keep a directory of its own, with
  * a heuristic fallback for exactly that case (`TerminalTabsManager.getTerminalTabs()` ->
  * `TerminalSessionTab.workingDirectory`), but the class is Kotlin-`internal` and closed to plugins.
  */
